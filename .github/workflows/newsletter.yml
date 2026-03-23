@@ -27,4 +27,4 @@ jobs:
           ZYTE_API_KEY:            ${{ secrets.ZYTE_API_KEY }}
           GOOGLE_CREDENTIALS_JSON: ${{ secrets.GOOGLE_CREDENTIALS_JSON }}
           GSHEET_ID:               ${{ secrets.GSHEET_ID }}
-        run: python Code/newsletter.py
+        run: python Code/Furry_Friends_Marietta.py
