@@ -19,7 +19,7 @@ jobs:
           python-version: '3.11'
           
       - name: Install dependencies
-        run: pip install -r code/requirements.txt
+        run: pip install -r Code/requirements.txt
  
       - name: Run newsletter script
         env:
