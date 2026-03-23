@@ -30,4 +30,4 @@ jobs:
           ZYTE_API_KEY:            ${{ secrets.ZYTE_API_KEY }}
           GOOGLE_CREDENTIALS_JSON: ${{ secrets.GOOGLE_CREDENTIALS_JSON }}
           GSHEET_ID:               ${{ secrets.GSHEET_ID }}
-        run: python newsletter.py
+        run: python code/newsletter.py
