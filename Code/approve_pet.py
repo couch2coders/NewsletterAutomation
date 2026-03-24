@@ -90,9 +90,11 @@ if approved_row:
             "Authorization": f"Bearer {BEEHIIV_API_KEY}",
             "Content-Type": "application/json"
         },
+
         json={
+            "title": f"Meet {pet_name} | East Cobb Connect",
             "subject": f"Meet {pet_name} 🐾 | East Cobb Connect",
-            "content_html": content_html,
+            "body_content": content_html,
             "status": "draft",
             "platform": "email"
         }
