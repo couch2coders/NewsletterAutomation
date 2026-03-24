@@ -64,11 +64,14 @@ if approved_row:
     source_url      = approved_row[0]
 
     # Fetch template from Beehiiv
+    # Debug -- list all templates
     template_res = requests.get(
-        f"https://api.beehiiv.com/v2/publications/{BEEHIIV_PUB_ID}/templates/{BEEHIIV_TEMPLATE_ID}",
+        f"https://api.beehiiv.com/v2/publications/{BEEHIIV_PUB_ID}/templates",
         headers={"Authorization": f"Bearer {BEEHIIV_API_KEY}"}
     )
-
+    print(f"Status: {template_res.status_code}")
+    print(f"Response: {template_res.text[:500]}")
+    exit(0)
     if template_res.status_code != 200:
         print(f"Failed to fetch template: {template_res.status_code} {template_res.text}")
         exit(1)
