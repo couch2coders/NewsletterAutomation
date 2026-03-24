@@ -18,6 +18,7 @@ import anthropic
 from google.oauth2.service_account import Credentials
 from googleapiclient.discovery import build
 
+NEWSLETTER_NAME = "East_Cobb_Connect"
 # ---------------------------------------------------------------------------
 # 1. ENVIRONMENT — all values injected by GitHub Actions secrets
 # ---------------------------------------------------------------------------
@@ -298,7 +299,6 @@ Mon-Fri 12-6pm, Sat-Sun 11am-5pm
 # ---------------------------------------------------------------------------
 # 9. SAVE RESULT TO GOOGLE SHEETS
 # ---------------------------------------------------------------------------
-
 def save_to_sheets(results: list[dict]) -> None:
     rows = []
     for data in results:
@@ -313,11 +313,13 @@ def save_to_sheets(results: list[dict]) -> None:
             data["shelter_hours"],
             data.get("photo_url") or "",
             datetime.today().strftime("%Y-%m-%d"),
-            "pending"
+            "pending",
+            "pet_blurb",
+            NEWSLETTER_NAME
         ])
     sheets_service.spreadsheets().values().append(
         spreadsheetId=GSHEET_ID,
-        range=f"{GSHEET_TAB}!A:K",
+        range=f"{GSHEET_TAB}!A:M",
         valueInputOption="RAW",
         body={"values": rows}
     ).execute()
