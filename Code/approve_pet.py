@@ -62,31 +62,16 @@ if approved_row:
     shelter_hours   = approved_row[7]
     photo_url       = approved_row[8] if len(approved_row) > 8 else ""
     source_url      = approved_row[0]
-
-    # Fetch template from Beehiiv
-    # Debug -- list all templates
-    template_res = requests.get(
-        f"https://api.beehiiv.com/v2/publications/{BEEHIIV_PUB_ID}/templates",
-        headers={"Authorization": f"Bearer {BEEHIIV_API_KEY}"}
-    )
-    print(f"Status: {template_res.status_code}")
-    print(f"Response: {template_res.text[:500]}")
-    exit(0)
-    if template_res.status_code != 200:
-        print(f"Failed to fetch template: {template_res.status_code} {template_res.text}")
-        exit(1)
-
-    template_data = template_res.json()
-    print(f"Template fetched: {template_data.keys()}")
-    template_html = template_data.get("data", {}).get("content_html", "")
-
-    if not template_html:
-        print("Template HTML is empty -- check template ID and API key")
-        exit(1)
-
+   
+    # Load template from repo
+    from pathlib import Path
+    
+    template_path = Path(__file__).parent / "templates" / "east_cobb_connect.html"
+    template_html = template_path.read_text(encoding="utf-8")
+    
     # Swap placeholders
     photo_tag = f'<img src="{photo_url}" alt="{pet_name}" style="width:100%;border-radius:12px;margin-bottom:16px;" />' if photo_url else ""
-
+    
     content_html = template_html \
         .replace("{PET_NAME}", pet_name) \
         .replace("{PET_BLURB}", blurb) \
