@@ -1,6 +1,6 @@
 ---
 name: pet-adoption-blurb-writer
-description: Write casual, warm, neighbor-style pet adoption blurbs for local newsletters like East Cobb Connect and Perimeter Post. Pull data from a Petfinder listing or similar adoption source and write a short, friendly blurb that makes readers want to go meet the animal. Use when the user provides a pet listing URL and asks for adoption content for a local newsletter.
+description: Write casual, warm, neighbor-style pet adoption blurbs for local newsletters like East Cobb Connect and Perimeter Post. Use data provided and write a short, friendly blurb that makes readers want to go meet the animal. Use when the user provides a pet listing URL and asks for adoption content for a local newsletter. We want up to 3 options
 ---
 
 # Pet Adoption Blurb Writer
@@ -23,18 +23,14 @@ Use when the user provides a pet listing link (Petfinder, shelter website, rescu
 5. Flags anything the reader needs to know (behavioral quirks, compatibility notes) with a positive spin
 
 ---
-## Provided URLs
+## Provided Data
 
-https://www.petfinder.com/search/pets-for-adoption/us/ga/atlanta/?shelterRescue=dc176986-7d9a-45b9-b144-f2df586d9cf4&includeOutOfTown=true&distance=anywhere
-
-https://atlantahumane.org/adopt/dogs/
-
-https://atlantahumane.org/adopt/cats/ 
+Use the data that is sent in the prompt
 
 
 ## Step 1: Fetch the Listing
 
-Use web_fetch on the URL from Provided URLs section. Extract:
+Using the provided data, Extract:
 - Name, age, breed, sex, size, color
 - Personality traits and behaviors listed
 - Any quirks, training status, or compatibility notes (kids, dogs, cats)
@@ -43,7 +39,7 @@ Use web_fetch on the URL from Provided URLs section. Extract:
 - Any ID number needed to inquire about the pet
 - How to adopt (walk in, inquiry form, appointment required, etc.)
 
-If the listing has very little information, tell the user before writing and ask if they have anything to add.
+If the listing has very little information, use the image to create a fun bio, but specify that this pet doesn't have a proper bio so we made one up
 
 ---
 
