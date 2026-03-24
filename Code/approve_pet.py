@@ -98,6 +98,9 @@ if approved_row:
         }
     )
 
+    print(f"Beehiiv status: {draft_res.status_code}")
+    print(f"Beehiiv response: {draft_res.text[:500]}")
+    
     if draft_res.status_code in [200, 201]:
         data = draft_res.json()
         post_id = data.get("data", {}).get("id")
