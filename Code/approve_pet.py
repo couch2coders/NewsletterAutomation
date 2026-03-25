@@ -1,6 +1,7 @@
 import os
 import json
 import requests
+from pathlib import Path
 from google.oauth2.service_account import Credentials
 from googleapiclient.discovery import build
 
@@ -9,7 +10,6 @@ GSHEET_ID               = os.environ["GSHEET_ID"]
 APPROVED_URL            = os.environ["APPROVED_URL"]
 BEEHIIV_API_KEY         = os.environ["BEEHIIV_API_KEY"]
 BEEHIIV_PUB_ID          = os.environ["BEEHIIV_PUBLICATION_ID"]
-BEEHIIV_TEMPLATE_ID     = "742a1712-66f9-4d9d-8fbf-af02abfb7bdd"
 GSHEET_TAB              = "Pets"
 
 creds = Credentials.from_service_account_info(
@@ -21,7 +21,7 @@ sheets_service = build("sheets", "v4", credentials=creds)
 # Read all rows
 result = sheets_service.spreadsheets().values().get(
     spreadsheetId=GSHEET_ID,
-    range=f"{GSHEET_TAB}!A:M"
+    range=f"{GSHEET_TAB}!A:R"
 ).execute()
 rows = result.get("values", [])
 
@@ -51,27 +51,34 @@ if updates:
     ).execute()
     print(f"Updated {len(updates)} rows")
 
-# Push approved pet to Beehiiv
+# Process approved pet
 if approved_row:
-    pet_name        = approved_row[1]
-    shelter_name    = approved_row[2]
-    blurb           = approved_row[3]
-    shelter_address = approved_row[4]
-    shelter_phone   = approved_row[5]
-    shelter_email   = approved_row[6]
-    shelter_hours   = approved_row[7]
-    photo_url       = approved_row[8] if len(approved_row) > 8 else ""
-    source_url      = approved_row[0]
-   
-    # Load template from repo
-    from pathlib import Path
-    
+    pet_name            = approved_row[1]
+    shelter_name        = approved_row[2]
+    blurb               = approved_row[3]
+    shelter_address     = approved_row[4]
+    shelter_phone       = approved_row[5]
+    shelter_email       = approved_row[6]
+    shelter_hours       = approved_row[7]
+    photo_url           = approved_row[8]  if len(approved_row) > 8  else ""
+    source_url          = approved_row[0]
+    total_score         = approved_row[13] if len(approved_row) > 13 else ""
+    adoptability_score  = approved_row[14] if len(approved_row) > 14 else ""
+    story_score         = approved_row[15] if len(approved_row) > 15 else ""
+    shelter_time_score  = approved_row[16] if len(approved_row) > 16 else ""
+    scoring_notes       = approved_row[17] if len(approved_row) > 17 else ""
+
+    print(f"Approved: {pet_name} | Total score: {total_score}/30")
+    print(f"Adoptability: {adoptability_score} | Story: {story_score} | Shelter time: {shelter_time_score}")
+    print(f"Notes: {scoring_notes[:100]}...")
+
+    # Load template
     template_path = Path(__file__).parent / "templates" / "east_cobb_connect.html"
     template_html = template_path.read_text(encoding="utf-8")
-    
+
     # Swap placeholders
     photo_tag = f'<img src="{photo_url}" alt="{pet_name}" style="width:100%;border-radius:12px;margin-bottom:16px;" />' if photo_url else ""
-    
+
     content_html = template_html \
         .replace("{PET_NAME}", pet_name) \
         .replace("{PET_BLURB}", blurb) \
@@ -90,23 +97,20 @@ if approved_row:
             "Authorization": f"Bearer {BEEHIIV_API_KEY}",
             "Content-Type": "application/json"
         },
-
         json={
-            "title": f"Meet {pet_name} | East Cobb Connect",
-            "subject": f"Meet {pet_name} 🐾 | East Cobb Connect",
+            "title":        f"Meet {pet_name} | East Cobb Connect",
+            "subject":      f"Meet {pet_name} 🐾 | East Cobb Connect",
             "body_content": content_html,
-            "status": "draft",
-            "platform": "email"
+            "status":       "draft",
+            "platform":     "email"
         }
     )
 
-    print(f"Beehiiv status: {draft_res.status_code}")
-    print(f"Beehiiv response: {draft_res.text[:500]}")
-    
     if draft_res.status_code in [200, 201]:
         data = draft_res.json()
         post_id = data.get("data", {}).get("id")
         print(f"Beehiiv draft created: {post_id}")
-        print(f"View at: https://app.beehiiv.com/publications/{BEEHIIV_PUB_ID}/posts/{post_id}")
     else:
         print(f"Beehiiv error: {draft_res.status_code} {draft_res.text}")
+else:
+    print("No pending rows found to approve.")
