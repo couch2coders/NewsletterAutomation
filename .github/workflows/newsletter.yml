@@ -28,4 +28,5 @@ jobs:
           APIFY_API_KEY:           ${{ secrets.APIFY_API_KEY }}
           GOOGLE_CREDENTIALS_JSON: ${{ secrets.GDRIVE_CREDENTIALS }}
           GSHEET_ID:               ${{ secrets.GSHEET_ID }}
+          RESCUE_GROUP_API_KEY:    ${{ secrets.RESCUE_GROUP_API_KEY }}
         run: python Code/Furry_Friends_Marietta.py
