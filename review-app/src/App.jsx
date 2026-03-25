@@ -29,17 +29,9 @@ const styles = `
     min-height: 100vh;
   }
 
-  .app {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 48px 24px;
-  }
+  .app { max-width: 1200px; margin: 0 auto; padding: 48px 24px; }
 
-  .header {
-    text-align: center;
-    margin-bottom: 56px;
-  }
-
+  .header { text-align: center; margin-bottom: 56px; }
   .header-eyebrow {
     font-family: 'DM Sans', sans-serif;
     font-weight: 300;
@@ -49,7 +41,6 @@ const styles = `
     color: var(--rust);
     margin-bottom: 12px;
   }
-
   .header h1 {
     font-family: 'Playfair Display', serif;
     font-size: clamp(2rem, 5vw, 3.5rem);
@@ -57,12 +48,7 @@ const styles = `
     line-height: 1.1;
     color: var(--bark);
   }
-
-  .header h1 em {
-    font-style: italic;
-    color: var(--rust);
-  }
-
+  .header h1 em { font-style: italic; color: var(--rust); }
   .header-sub {
     margin-top: 16px;
     font-size: 15px;
@@ -83,19 +69,8 @@ const styles = `
     box-shadow: 0 4px 32px var(--shadow);
     text-align: center;
   }
-
-  .token-gate h2 {
-    font-family: 'Playfair Display', serif;
-    font-size: 1.5rem;
-    margin-bottom: 8px;
-  }
-
-  .token-gate p {
-    font-size: 14px;
-    color: #6B5744;
-    margin-bottom: 24px;
-    line-height: 1.6;
-  }
+  .token-gate h2 { font-family: 'Playfair Display', serif; font-size: 1.5rem; margin-bottom: 8px; }
+  .token-gate p { font-size: 14px; color: #6B5744; margin-bottom: 24px; line-height: 1.6; }
 
   .token-input {
     width: 100%;
@@ -110,7 +85,6 @@ const styles = `
     outline: none;
     transition: border-color 0.2s;
   }
-
   .token-input:focus { border-color: var(--rust); }
 
   .btn {
@@ -126,14 +100,7 @@ const styles = `
     border: none;
     transition: all 0.2s;
   }
-
-  .btn-primary {
-    background: var(--rust);
-    color: white;
-    width: 100%;
-    justify-content: center;
-  }
-
+  .btn-primary { background: var(--rust); color: white; width: 100%; justify-content: center; }
   .btn-primary:hover { background: #A8441A; transform: translateY(-1px); }
   .btn-primary:disabled { background: #C4A090; cursor: not-allowed; transform: none; }
 
@@ -146,7 +113,6 @@ const styles = `
     padding: 14px 28px;
     font-size: 15px;
   }
-
   .btn-approve:hover { background: #5F8563; transform: translateY(-1px); }
   .btn-approve:disabled { background: #A8C4AA; cursor: not-allowed; transform: none; }
 
@@ -166,21 +132,9 @@ const styles = `
     flex-direction: column;
     position: relative;
   }
-
-  .tile:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 12px 40px var(--shadow);
-  }
-
-  .tile.approved {
-    outline: 3px solid var(--sage);
-    outline-offset: -3px;
-  }
-
-  .tile.rejected {
-    opacity: 0.4;
-    pointer-events: none;
-  }
+  .tile:hover { transform: translateY(-4px); box-shadow: 0 12px 40px var(--shadow); }
+  .tile.approved { outline: 3px solid var(--sage); outline-offset: -3px; }
+  .tile.rejected { opacity: 0.4; pointer-events: none; }
 
   .tile-badge {
     position: absolute;
@@ -200,7 +154,6 @@ const styles = `
   .tile-photo {
     width: 100%;
     height: 240px;
-    object-fit: cover;
     background: var(--sand);
     display: flex;
     align-items: center;
@@ -209,40 +162,17 @@ const styles = `
     font-size: 13px;
     flex-shrink: 0;
   }
+  .tile-photo img { width: 100%; height: 100%; object-fit: cover; }
 
-  .tile-photo img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
+  .tile-body { padding: 28px; flex: 1; display: flex; flex-direction: column; }
 
-  .tile-body {
-    padding: 28px;
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-  }
-
-  .tile-meta {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 12px;
-  }
-
+  .tile-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
   .tile-shelter {
     font-size: 11px;
     font-weight: 500;
     letter-spacing: 0.15em;
     text-transform: uppercase;
     color: var(--rust);
-  }
-
-  .tile-dot {
-    width: 3px;
-    height: 3px;
-    border-radius: 50%;
-    background: var(--sand);
   }
 
   .tile-name {
@@ -253,6 +183,58 @@ const styles = `
     margin-bottom: 16px;
     line-height: 1.2;
   }
+
+  .score-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+    padding: 12px 16px;
+    background: var(--cream);
+    border-radius: 10px;
+  }
+  .score-total {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--rust);
+    white-space: nowrap;
+  }
+  .score-total span {
+    font-size: 0.8rem;
+    color: #A89080;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 300;
+  }
+  .score-pills { display: flex; flex-wrap: wrap; gap: 6px; }
+  .score-pill {
+    font-size: 11px;
+    font-weight: 500;
+    padding: 3px 8px;
+    border-radius: 99px;
+    background: white;
+    border: 1px solid var(--sand);
+    color: #6B5744;
+    white-space: nowrap;
+  }
+
+  .scoring-notes {
+    margin-bottom: 16px;
+    padding: 14px 16px;
+    background: #F0F7F1;
+    border-radius: 10px;
+    border-left: 3px solid var(--sage);
+  }
+  .scoring-notes-label {
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--sage);
+    margin-bottom: 8px;
+  }
+  .scoring-notes ul { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 6px; }
+  .scoring-notes li { font-size: 13px; line-height: 1.5; color: #3A5C3E; }
 
   .tile-blurb {
     font-size: 14px;
@@ -271,16 +253,7 @@ const styles = `
     color: #6B5744;
     line-height: 1.8;
   }
-
-  .tile-link {
-    display: inline-block;
-    margin-top: 8px;
-    font-size: 12px;
-    color: var(--rust);
-    text-decoration: none;
-    font-weight: 500;
-  }
-
+  .tile-link { display: inline-block; margin-top: 8px; font-size: 12px; color: var(--rust); text-decoration: none; font-weight: 500; }
   .tile-link:hover { text-decoration: underline; }
 
   .status-bar {
@@ -293,27 +266,12 @@ const styles = `
     font-size: 14px;
     color: #6B5744;
   }
-
   .status-bar strong { color: var(--bark); }
 
-  .empty {
-    text-align: center;
-    padding: 80px 24px;
-    color: #6B5744;
-  }
+  .empty { text-align: center; padding: 80px 24px; color: #6B5744; }
+  .empty h2 { font-family: 'Playfair Display', serif; font-size: 1.8rem; margin-bottom: 12px; }
 
-  .empty h2 {
-    font-family: 'Playfair Display', serif;
-    font-size: 1.8rem;
-    margin-bottom: 12px;
-  }
-
-  .loading {
-    text-align: center;
-    padding: 80px 24px;
-    color: #6B5744;
-    font-size: 15px;
-  }
+  .loading { text-align: center; padding: 80px 24px; color: #6B5744; font-size: 15px; }
 
   .error-msg {
     background: #FFF0ED;
@@ -336,7 +294,6 @@ const styles = `
     font-size: 15px;
     color: #3A6B3E;
   }
-
   .success-banner strong {
     display: block;
     font-family: 'Playfair Display', serif;
@@ -346,32 +303,46 @@ const styles = `
 `;
 
 // ── HELPERS ───────────────────────────────────────────────────────────────────
-function parseSheetRows(values) {
-  if (!values || values.length < 2) return [];
-  const headers = values[0];
-  return values.slice(1).map(row => {
+function parseCSV(text) {
+  const rows = [];
+  let cur = "", inQ = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (c === '"') { inQ = !inQ; }
+    else if (c === ',' && !inQ) { cur += '\x00'; }
+    else if (c === '\n' && !inQ) { rows.push(cur.split('\x00').map(f => f.replace(/"/g, "").trim())); cur = ""; }
+    else { cur += c; }
+  }
+  if (cur) rows.push(cur.split('\x00').map(f => f.replace(/"/g, "").trim()));
+  if (rows.length < 2) return [];
+  const headers = rows[0];
+  return rows.slice(1).map(vals => {
     const obj = {};
-    headers.forEach((h, i) => { obj[h] = row[i] || ""; });
+    headers.forEach((h, i) => { obj[h] = vals[i] || ""; });
     return obj;
   });
 }
 
+function parseBullets(notes) {
+  if (!notes) return [];
+  return notes
+    .split("\n")
+    .map(b => b.replace(/^•\s*/, "").trim())
+    .filter(Boolean);
+}
+
 // ── MAIN APP ──────────────────────────────────────────────────────────────────
 export default function PetReviewApp() {
-  const [token, setToken]         = useState(() => localStorage.getItem("gh_token") || "");
+  const [token, setToken]           = useState(() => localStorage.getItem("gh_token") || "");
   const [tokenInput, setTokenInput] = useState("");
-  const [pets, setPets]           = useState([]);
-  const [loading, setLoading]     = useState(false);
-  const [approving, setApproving] = useState(null);
-  const [approved, setApproved]   = useState(null);
-  const [error, setError]         = useState("");
-  const [success, setSuccess]     = useState("");
+  const [pets, setPets]             = useState([]);
+  const [loading, setLoading]       = useState(false);
+  const [approving, setApproving]   = useState(null);
+  const [approved, setApproved]     = useState(null);
+  const [error, setError]           = useState("");
+  const [success, setSuccess]       = useState("");
 
-  const isAuthed = Boolean(token);
-
-  // ── Fetch pending pets from Google Sheets (via GitHub API + Actions) ─────
-  // Since we can't call Sheets directly from the browser securely,
-  // we use a public CSV export of the sheet (read-only, no auth needed)
+  const isAuthed  = Boolean(token);
   const SHEET_CSV = `https://docs.google.com/spreadsheets/d/${GSHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(GSHEET_TAB)}`;
 
   useEffect(() => {
@@ -386,42 +357,13 @@ export default function PetReviewApp() {
       const res  = await fetch(SHEET_CSV);
       const text = await res.text();
       const rows = parseCSV(text);
-      const pending = rows.filter(r => r.status === "pending");
-      setPets(pending);
+      setPets(rows.filter(r => r.status === "pending"));
     } catch (e) {
-      setError("Could not load pets from Google Sheets. Make sure the sheet is shared with the service account.");
+      setError("Could not load pets from Google Sheets.");
     } finally {
       setLoading(false);
     }
   }
-
-function parseCSV(text) {
-  const rows = [];
-  let cur = "", inQ = false;
-  
-  for (let i = 0; i < text.length; i++) {
-    const c = text[i];
-    if (c === '"') {
-      inQ = !inQ;
-    } else if (c === ',' && !inQ) {
-      cur += '\x00';
-    } else if (c === '\n' && !inQ) {
-      rows.push(cur.split('\x00').map(f => f.replace(/"/g, "").trim()));
-      cur = "";
-    } else {
-      cur += c;
-    }
-  }
-  if (cur) rows.push(cur.split('\x00').map(f => f.replace(/"/g, "").trim()));
-
-  if (rows.length < 2) return [];
-  const headers = rows[0];
-  return rows.slice(1).map(vals => {
-    const obj = {};
-    headers.forEach((h, i) => { obj[h] = vals[i] || ""; });
-    return obj;
-  });
-}
 
   async function handleApprove(pet) {
     if (!token) return;
@@ -437,10 +379,7 @@ function parseCSV(text) {
             Accept: "application/vnd.github+json",
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({
-            ref: "main",
-            inputs: { source_url: pet.source_url }
-          })
+          body: JSON.stringify({ ref: "main", inputs: { source_url: pet.source_url } })
         }
       );
       if (!res.ok) {
@@ -448,7 +387,7 @@ function parseCSV(text) {
         throw new Error(err.message || "GitHub API error");
       }
       setApproved(pet.source_url);
-      setSuccess(`${pet.pet_name} approved! The workflow is updating the sheet now.`);
+      setSuccess(`${pet.pet_name} approved!`);
       setPets(prev => prev.map(p => ({
         ...p,
         _localStatus: p.source_url === pet.source_url ? "approved" : "rejected"
@@ -492,18 +431,19 @@ function parseCSV(text) {
               onChange={e => setTokenInput(e.target.value)}
               onKeyDown={e => e.key === "Enter" && handleTokenSubmit()}
             />
-            <button className="btn btn-primary" onClick={handleTokenSubmit}>
-              Continue
-            </button>
+            <button className="btn btn-primary" onClick={handleTokenSubmit}>Continue</button>
             {error && <div className="error-msg">{error}</div>}
           </div>
+
         ) : loading ? (
           <div className="loading">Loading this week's candidates...</div>
+
         ) : pets.length === 0 ? (
           <div className="empty">
             <h2>All clear!</h2>
             <p>No pending pets found. Run the pipeline to generate new candidates.</p>
           </div>
+
         ) : (
           <>
             {success && (
@@ -521,6 +461,9 @@ function parseCSV(text) {
             <div className="tiles">
               {pets.map((pet, idx) => {
                 const localStatus = pet._localStatus;
+                const bullets     = parseBullets(pet.scoring_notes);
+                const total       = pet.total_score ? parseInt(pet.total_score) : null;
+
                 return (
                   <div
                     key={pet.source_url || idx}
@@ -531,25 +474,48 @@ function parseCSV(text) {
                     )}
 
                     <div className="tile-photo">
-                      {pet.photo_url ? (
-                        <img src={pet.photo_url} alt={pet.pet_name} />
-                      ) : (
-                        <span>No photo available</span>
-                      )}
+                      {pet.photo_url
+                        ? <img src={pet.photo_url} alt={pet.pet_name} />
+                        : <span>No photo available</span>
+                      }
                     </div>
 
                     <div className="tile-body">
                       <div className="tile-meta">
                         <span className="tile-shelter">{pet.shelter_name}</span>
                       </div>
+
                       <div className="tile-name">{pet.pet_name}</div>
+
+                      {/* Score bar */}
+                      {total !== null && (
+                        <div className="score-bar">
+                          <div className="score-total">{total}<span>/30</span></div>
+                          <div className="score-pills">
+                            {pet.adoptability_score && <span className="score-pill">🏠 Adoptability {pet.adoptability_score}</span>}
+                            {pet.story_score        && <span className="score-pill">📖 Story {pet.story_score}</span>}
+                            {pet.shelter_time_score && <span className="score-pill">⏱ Wait {pet.shelter_time_score}</span>}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Scoring notes */}
+                      {bullets.length > 0 && (
+                        <div className="scoring-notes">
+                          <div className="scoring-notes-label">Why feature this pet</div>
+                          <ul>
+                            {bullets.map((b, i) => <li key={i}>{b}</li>)}
+                          </ul>
+                        </div>
+                      )}
+
                       <div className="tile-blurb">{pet.blurb}</div>
 
                       <div className="tile-shelter-info">
                         {pet.shelter_address && <div>{pet.shelter_address}</div>}
-                        {pet.shelter_phone && <div>{pet.shelter_phone}{pet.shelter_email ? ` | ${pet.shelter_email}` : ""}</div>}
-                        {pet.shelter_hours && <div>{pet.shelter_hours}</div>}
-                        {pet.source_url && (
+                        {pet.shelter_phone   && <div>{pet.shelter_phone}{pet.shelter_email ? ` | ${pet.shelter_email}` : ""}</div>}
+                        {pet.shelter_hours   && <div>{pet.shelter_hours}</div>}
+                        {pet.source_url      && (
                           <a className="tile-link" href={pet.source_url} target="_blank" rel="noreferrer">
                             View listing →
                           </a>
