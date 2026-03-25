@@ -343,8 +343,7 @@ export default function PetReviewApp() {
   const [success, setSuccess]       = useState("");
 
   const isAuthed  = Boolean(token);
-  const SHEET_CSV = `https://docs.google.com/spreadsheets/d/${GSHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(GSHEET_TAB)}`;
-
+  const SHEET_CSV = `https://docs.google.com/spreadsheets/d/${GSHEET_ID}/export?format=csv&sheet=${encodeURIComponent(GSHEET_TAB)}`;
   useEffect(() => {
     if (!isAuthed) return;
     fetchPets();
