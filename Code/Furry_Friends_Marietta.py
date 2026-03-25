@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Newsletter Automation - Pet Adoption Section
-Scrapes Atlanta Humane Society and Petfinder for cats and dogs,
+Uses RescueGroups.org API to find adoptable cats and dogs near East Cobb,
 generates blurbs via Claude, scores them, flags defaults,
 and writes results to Google Sheets.
 """
@@ -10,23 +10,23 @@ import os
 import json
 import time
 from datetime import datetime
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import requests
-from bs4 import BeautifulSoup
 import anthropic
 from google.oauth2.service_account import Credentials
 from googleapiclient.discovery import build
 
-NEWSLETTER_NAME = "East_Cobb_Connect"
+NEWSLETTER_NAME     = "East_Cobb_Connect"
+ANCHOR_ZIP          = "30062"
+SEARCH_RADIUS_MILES = 5
 
 # ---------------------------------------------------------------------------
 # 1. ENVIRONMENT
 # ---------------------------------------------------------------------------
 CLAUDE_API_KEY          = os.environ["CLAUDE_API_KEY"]
-APIFY_API_KEY           = os.environ["APIFY_API_KEY"]
-ZYTE_API_KEY             = os.environ["ZYTE_API_KEY"]
+RESCUEGROUPS_API_KEY    = os.environ["RESCUEGROUPS_API_KEY"]
 GOOGLE_CREDENTIALS_JSON = os.environ["GOOGLE_CREDENTIALS_JSON"]
 GSHEET_ID               = os.environ["GSHEET_ID"]
 GSHEET_TAB              = "Pets"
@@ -53,27 +53,7 @@ def load_skill_prompt() -> str:
     return prompt
 
 # ---------------------------------------------------------------------------
-# 4. APIFY SCRAPING
-# ---------------------------------------------------------------------------
-def fetch_with_zyte(url: str, retries: int = 2) -> str | None:
-    for attempt in range(retries):
-        try:
-            response = requests.post(
-                "https://api.zyte.com/v1/extract",
-                auth=(ZYTE_API_KEY, ""),
-                json={"url": url, "browserHtml": True},
-                timeout=120
-            )
-            return response.json()["browserHtml"]
-        except requests.exceptions.ReadTimeout:
-            print(f"Timeout on attempt {attempt + 1} for {url}")
-            if attempt < retries - 1:
-                time.sleep(3)
-            else:
-                print(f"Skipping {url} after {retries} attempts")
-                return None
-# ---------------------------------------------------------------------------
-# 5. LOAD PREVIOUSLY APPROVED URLS
+# 4. LOAD PREVIOUSLY APPROVED URLS
 # ---------------------------------------------------------------------------
 def get_approved_urls() -> set[str]:
     result = sheets_service.spreadsheets().values().get(
@@ -89,146 +69,134 @@ def get_approved_urls() -> set[str]:
     return approved
 
 # ---------------------------------------------------------------------------
-# 6. SCRAPE HUMANE SOCIETY
+# 5. FETCH PETS FROM RESCUEGROUPS API
 # ---------------------------------------------------------------------------
-def scrape_humane_society(animal_type: str, excluded_urls: set, target: int = 5) -> list[dict]:
-    print(f"\n--- Scraping Atlanta Humane Society ({animal_type}s) ---")
+def fetch_rescuegroups(species: str, excluded_urls: set, target: int = 5) -> list[dict]:
+    print(f"\n--- Fetching {species}s from RescueGroups API ---")
 
-    if animal_type == "cat":
-        listing_url = (
-            "https://atlantahumane.org/adopt/cats/"
-            "?PrimaryBreed=0&Location_4=Marietta&PrimaryColor=0"
-            "&search=+Search+&ClientID=13&Species=Cat"
-        )
-    else:
-        listing_url = "https://atlantahumane.org/adopt/dogs/"
+    url = "https://api.rescuegroups.org/v5/public/animals/search/available"
+    headers = {
+        "Authorization": RESCUEGROUPS_API_KEY,
+        "Content-Type": "application/json"
+    }
 
-    html = fetch_with_apify(listing_url)
-    if not html:
-        print(f"Failed to fetch Humane Society {animal_type} listing page")
+    payload = {
+        "data": {
+            "filterRadius": {
+                "miles": SEARCH_RADIUS_MILES,
+                "postalcode": ANCHOR_ZIP
+            },
+            "filters": [
+                {
+                    "fieldName": "species",
+                    "operation": "equals",
+                    "criteria": species
+                }
+            ],
+            "limit": 50,
+            "offset": 0
+        }
+    }
+
+    try:
+        response = requests.post(url, headers=headers, json=payload, timeout=30)
+        response.raise_for_status()
+        data = response.json()
+    except Exception as e:
+        print(f"RescueGroups API error: {e}")
         return []
 
-    soup = clean_soup(html)
-    links = soup.find_all("a", href=True)
-    pet_links = list(set([
-        a["href"] for a in links
-        if "/adopt/" in a["href"] and "aid=" in a["href"]
-        and a["href"] not in excluded_urls
-    ]))
-    print(f"Found {len(pet_links)} candidate {animal_type} links")
+    animals = data.get("data", [])
+    included = data.get("included", [])
+    print(f"Found {len(animals)} {species}s within {SEARCH_RADIUS_MILES} miles of {ANCHOR_ZIP}")
+
+    # Build org lookup from included data
+    org_lookup = {}
+    photo_lookup = {}
+    for item in included:
+        if item.get("type") == "orgs":
+            org_id = item["id"]
+            attrs  = item.get("attributes", {})
+            org_lookup[org_id] = {
+                "name":    attrs.get("name", ""),
+                "address": f"{attrs.get('street', '')} {attrs.get('city', '')} {attrs.get('state', '')} {attrs.get('postalcode', '')}".strip(),
+                "phone":   attrs.get("phone", ""),
+                "email":   attrs.get("email", ""),
+                "hours":   attrs.get("hours", "")
+            }
+        if item.get("type") == "pictures":
+            pic_id  = item["id"]
+            pic_url = item.get("attributes", {}).get("large", {}).get("url", "")
+            if pic_url:
+                photo_lookup[pic_id] = pic_url
 
     pets = []
-
-    def fetch_and_parse(url):
-        if url in excluded_urls:
-            return None
-        html = fetch_with_apify(url)
-        if html is None:
-            return None
-        soup = clean_soup(html)
-        clean_text = soup.get_text(separator="\n", strip=True)
-        return url, soup, clean_text
-
-    with ThreadPoolExecutor(max_workers=5) as executor:
-        futures = {executor.submit(fetch_and_parse, url): url for url in pet_links}
-        for future in as_completed(futures):
-            if len(pets) >= target:
-                break
-            result = future.result()
-            if result is None:
-                continue
-            url, soup, clean_text = result
-            if "Adoption Fee:" in clean_text:
-                after_fee = clean_text.split("Adoption Fee:")[1]
-                remaining = "\n".join(after_fee.strip().split("\n")[2:]).strip()
-                if len(remaining) > 100 and "PetBridge" not in remaining[:150]:
-                    photos = [
-                        img.get("src") for img in soup.find_all("img")
-                        if img.get("src") and "petango.com" in img.get("src")
-                    ][:3]
-                    pets.append({"url": url, "profile": clean_text, "photos": photos, "animal_type": animal_type})
-                    print(f"  ✓ {animal_type}: {url} | {len(photos)} photos")
-                else:
-                    print(f"  ✗ No description: {url}")
-
-    print(f"Humane Society {animal_type}s: {len(pets)} with descriptions")
-    return pets
-
-# ---------------------------------------------------------------------------
-# 7. SCRAPE PETFINDER
-# ---------------------------------------------------------------------------
-def scrape_petfinder(animal_type: str, excluded_urls: set, target: int = 5, max_total_fetched: int = 10, max_pages: int = 3) -> list[dict]:
-    print(f"\n--- Scraping Petfinder ({animal_type}s) ---")
-    base_url = "https://www.petfinder.com"
-
-    if animal_type == "cat":
-        listing_url = "https://www.petfinder.com/search/cats-for-adoption/us/ga/eastcobb/?includeOutOfTown=true&distance=25&page={page}"
-        detail_pattern = "/cat/"
-    else:
-        listing_url = "https://www.petfinder.com/search/dogs-for-adoption/us/ga/eastcobb/?includeOutOfTown=true&distance=25&page={page}"
-        detail_pattern = "/dog/"
-
-    # Fetch listing pages in parallel
-    all_pet_links = []
-
-    def fetch_listing_page(page):
-        html = fetch_with_apify(listing_url.format(page=page))
-        if not html:
-            return []
-        soup = clean_soup(html)
-        links = soup.find_all("a", href=True)
-        return list(set([
-            a["href"] for a in links
-            if detail_pattern in a["href"] and "/details/" in a["href"]
-            and base_url + a["href"] not in excluded_urls
-        ]))
-
-    for page in range(1, max_pages + 1):
-        page_links = fetch_listing_page(page)
-        all_pet_links.extend(page_links)
-        print(f"  {len(page_links)} links from page {page} ({len(all_pet_links)} total)")
-        time.sleep(1)
-        
-    all_pet_links = list(set(all_pet_links))
-    full_links = [base_url + link for link in all_pet_links if base_url + link not in excluded_urls]
-    print(f"  {len(full_links)} total candidate links")
-
-    pets = []
-    total_fetched = 0
-
-    for url in full_links:
+    for animal in animals:
         if len(pets) >= target:
-            print(f"  Reached {target} {animal_type}s. Stopping.")
-            break
-        if total_fetched >= max_total_fetched:
-            print(f"  Reached fetch limit. Stopping.")
             break
 
-        html = fetch_with_apify(url)
-        total_fetched += 1
-        if not html:
+        attrs     = animal.get("attributes", {})
+        relations = animal.get("relationships", {})
+
+        # Build source URL
+        animal_id  = animal.get("id", "")
+        source_url = f"https://www.rescuegroups.org/animals/detail/{animal_id}/"
+
+        # Skip if previously approved
+        if source_url in excluded_urls:
+            print(f"  Skipping previously approved: {source_url}")
             continue
 
-        soup = clean_soup(html)
-        clean_text = soup.get_text(separator="\n", strip=True)
+        # Skip if no description
+        description = attrs.get("descriptionText") or attrs.get("description", "")
+        if not description or len(description.strip()) < 50:
+            continue
 
-        if "Story" in clean_text and len(clean_text) > 500:
-            photos = [
-                img.get("src") for img in soup.find_all("img")
-                if img.get("src")
-                and "cloudfront.net" in img.get("src")
-                and "Enlarge" not in (img.get("alt") or "")
-            ][:3]
-            pets.append({"url": url, "profile": clean_text, "photos": photos, "animal_type": animal_type})
-            print(f"  ✓ {total_fetched} fetched | {len(pets)} {animal_type}s: {url}")
-        else:
-            print(f"  ✗ No description: {url}")
+        # Get org info
+        org_id   = relations.get("orgs", {}).get("data", [{}])[0].get("id", "") if relations.get("orgs", {}).get("data") else ""
+        org_info = org_lookup.get(org_id, {})
 
-    print(f"Petfinder {animal_type}s: {len(pets)} with descriptions from {total_fetched} fetched")
+        # Get photos
+        photo_ids = [p.get("id") for p in relations.get("pictures", {}).get("data", [])]
+        photos    = [photo_lookup[pid] for pid in photo_ids if pid in photo_lookup][:3]
+
+        # Build profile text
+        profile = f"""
+Name: {attrs.get('name', 'Unknown')}
+Species: {attrs.get('species', '')}
+Breed: {attrs.get('breeds', {}).get('primary', '')}
+Age: {attrs.get('ageString', '')}
+Gender: {attrs.get('sex', '')}
+Size: {attrs.get('sizeString', '')}
+Color: {attrs.get('colors', {}).get('primary', '')}
+Description: {description}
+Good with kids: {attrs.get('isKidsOk', 'Unknown')}
+Good with dogs: {attrs.get('isDogsOk', 'Unknown')}
+Good with cats: {attrs.get('isCatsOk', 'Unknown')}
+House trained: {attrs.get('isHouseTrained', 'Unknown')}
+Spayed/Neutered: {attrs.get('isAltered', 'Unknown')}
+Vaccinated: {attrs.get('isShotsCurrent', 'Unknown')}
+Shelter: {org_info.get('name', '')}
+Address: {org_info.get('address', '')}
+Phone: {org_info.get('phone', '')}
+Email: {org_info.get('email', '')}
+Hours: {org_info.get('hours', '')}
+"""
+
+        pets.append({
+            "url":          source_url,
+            "profile":      profile.strip(),
+            "photos":       photos,
+            "animal_type":  species.lower(),
+            "org_info":     org_info
+        })
+        print(f"  ✓ {attrs.get('name', 'Unknown')} | {org_info.get('name', 'Unknown org')} | {len(photos)} photos")
+
+    print(f"RescueGroups {species}s: {len(pets)} with descriptions")
     return pets
 
 # ---------------------------------------------------------------------------
-# 8. BUILD COMBINED PROFILES
+# 6. BUILD COMBINED PROFILES
 # ---------------------------------------------------------------------------
 def build_combined_profiles(pets: list[dict]) -> str:
     combined = ""
@@ -244,7 +212,7 @@ Profile:
     return combined
 
 # ---------------------------------------------------------------------------
-# 9. GENERATE BLURBS VIA CLAUDE
+# 7. GENERATE BLURBS VIA CLAUDE
 # ---------------------------------------------------------------------------
 def generate_blurb(pets: list[dict], skill_prompt: str, animal_type: str) -> list[dict]:
     client = anthropic.Anthropic(api_key=CLAUDE_API_KEY)
@@ -281,15 +249,6 @@ Exact format:
 ]
 
 {combined_profiles}
-
-Shelter info for Atlanta Humane Society - Marietta:
-1565 Industrial Blvd, Marietta, GA 30062
-(404) 974-2800 | adoptions@atlantahumane.org
-
-Shelter info for Good Mews Animal Foundation:
-3805 Robinson Road NW, Marietta, GA 30067
-(770) 499-2287 | adopt@goodmews.org
-Mon-Fri 12-6pm, Sat-Sun 11am-5pm
 """
         }]
     )
@@ -301,7 +260,7 @@ Mon-Fri 12-6pm, Sat-Sun 11am-5pm
     return results
 
 # ---------------------------------------------------------------------------
-# 10. SCORE ALL BLURBS IN ONE CLAUDE CALL
+# 8. SCORE ALL BLURBS IN ONE CLAUDE CALL
 # ---------------------------------------------------------------------------
 def score_blurbs(results: list[dict]) -> list[dict]:
     client = anthropic.Anthropic(api_key=CLAUDE_API_KEY)
@@ -374,33 +333,28 @@ Candidates to score:
     return results
 
 # ---------------------------------------------------------------------------
-# 11. FLAG DEFAULT WINNERS
+# 9. FLAG DEFAULT WINNERS
 # ---------------------------------------------------------------------------
 def flag_default_winners(cat_results: list[dict], dog_results: list[dict]) -> tuple[list[dict], list[dict]]:
     week_number = datetime.today().isocalendar()[1]
-    odd_week = week_number % 2 != 0
+    odd_week    = week_number % 2 != 0
 
-    # Sort by score
     cat_results.sort(key=lambda x: x["total_score"], reverse=True)
     dog_results.sort(key=lambda x: x["total_score"], reverse=True)
 
-    # Initialize all flags
     for r in cat_results + dog_results:
         r["cat_default"]    = ""
         r["dog_default"]    = ""
         r["default_winner"] = ""
 
-    # Flag top cat
     if cat_results:
         cat_results[0]["cat_default"] = "yes"
         print(f"Cat default: {cat_results[0]['pet_name']} ({cat_results[0]['total_score']}/30)")
 
-    # Flag top dog
     if dog_results:
         dog_results[0]["dog_default"] = "yes"
         print(f"Dog default: {dog_results[0]['pet_name']} ({dog_results[0]['total_score']}/30)")
 
-    # Flag overall default winner based on week number
     if odd_week and cat_results:
         cat_results[0]["default_winner"] = "yes"
         print(f"Week {week_number} (odd) — overall default: {cat_results[0]['pet_name']} (cat)")
@@ -411,7 +365,7 @@ def flag_default_winners(cat_results: list[dict], dog_results: list[dict]) -> tu
     return cat_results, dog_results
 
 # ---------------------------------------------------------------------------
-# 12. SAVE TO GOOGLE SHEETS
+# 10. SAVE TO GOOGLE SHEETS
 # ---------------------------------------------------------------------------
 def save_to_sheets(results: list[dict]) -> None:
     rows = []
@@ -449,31 +403,26 @@ def save_to_sheets(results: list[dict]) -> None:
     print(f"Saved {len(rows)} rows to Google Sheets")
 
 # ---------------------------------------------------------------------------
-# 13. MAIN
+# 11. MAIN
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
     print(f"Starting newsletter automation — {datetime.today().strftime('%Y-%m-%d')}")
+
     skill_prompt  = load_skill_prompt()
     approved_urls = get_approved_urls()
 
-    # Scrape cats first, then dogs sequentially to avoid Apify memory limits
-    print("\nScraping cats...")
-    humane_cats    = scrape_humane_society("cat", approved_urls, target=5)
-    petfinder_cats = scrape_petfinder("cat", approved_urls, target=5)
-    all_cats       = petfinder_cats + humane_cats
-    print(f"Total cats scraped: {len(all_cats)}")
+    # Fetch cats and dogs from RescueGroups
+    all_cats = fetch_rescuegroups("Cat", approved_urls, target=5)
+    all_dogs = fetch_rescuegroups("Dog", approved_urls, target=5)
 
-    print("\nScraping dogs...")
-    humane_dogs    = scrape_humane_society("dog", approved_urls, target=5)
-    petfinder_dogs = scrape_petfinder("dog", approved_urls, target=5)
-    all_dogs       = petfinder_dogs + humane_dogs
-    print(f"Total dogs scraped: {len(all_dogs)}")
+    print(f"\nTotal cats: {len(all_cats)}")
+    print(f"Total dogs: {len(all_dogs)}")
 
     if not all_cats and not all_dogs:
         print("No pets found. Exiting.")
         exit(1)
 
-    # Generate blurbs for cats and dogs in parallel
+    # Generate blurbs in parallel
     print("\nGenerating blurbs in parallel...")
     cat_results, dog_results = [], []
     with ThreadPoolExecutor(max_workers=2) as executor:
@@ -487,12 +436,12 @@ if __name__ == "__main__":
         if "dog" in futures:
             dog_results = futures["dog"].result()
 
-    # Score all 6 in one Claude call
+    # Score all in one Claude call
     all_results = cat_results + dog_results
-    print(f"\nScoring all {len(all_results)} candidates in one call...")
+    print(f"\nScoring all {len(all_results)} candidates...")
     all_results = score_blurbs(all_results)
 
-    # Split back into cats and dogs after scoring
+    # Split back by type
     cat_results = [r for r in all_results if r.get("animal_type") == "cat"]
     dog_results = [r for r in all_results if r.get("animal_type") == "dog"]
 
