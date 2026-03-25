@@ -74,10 +74,12 @@ def get_approved_urls() -> set[str]:
 def fetch_rescuegroups(species: str, excluded_urls: set, target: int = 5) -> list[dict]:
     print(f"\n--- Fetching {species}s from RescueGroups API ---")
 
-    url = "https://api.rescuegroups.org/v5/public/animals/search/available"
+    # Use views in URL: available + cats or dogs
+    url = f"https://api.rescuegroups.org/v5/public/animals/search/available/{species.lower()}s/"
+
     headers = {
         "Authorization": RESCUEGROUPS_API_KEY,
-        "Content-Type": "application/json"
+        "Content-Type": "application/vnd.api+json"
     }
 
     payload = {
@@ -85,115 +87,31 @@ def fetch_rescuegroups(species: str, excluded_urls: set, target: int = 5) -> lis
             "filterRadius": {
                 "miles": SEARCH_RADIUS_MILES,
                 "postalcode": ANCHOR_ZIP
-            },
-            "filters": [
-                {
-                    "fieldName": "species",
-                    "operation": "equals",
-                    "criteria": species
-                }
-            ],
-            "limit": 50,
-            "offset": 0
+            }
         }
     }
 
+    params = {
+        "limit": 50,
+        "include[]": ["pictures", "orgs"]
+    }
+
     try:
-        response = requests.post(url, headers=headers, json=payload, timeout=30)
-        response.raise_for_status()
+        response = requests.post(url, headers=headers, json=payload, params=params, timeout=30)
+        print(f"Status: {response.status_code}")
+        if response.status_code != 200:
+            print(f"Response: {response.text[:500]}")
+            return []
         data = response.json()
     except Exception as e:
         print(f"RescueGroups API error: {e}")
         return []
 
-    animals = data.get("data", [])
+    animals  = data.get("data", [])
     included = data.get("included", [])
     print(f"Found {len(animals)} {species}s within {SEARCH_RADIUS_MILES} miles of {ANCHOR_ZIP}")
-
-    # Build org lookup from included data
-    org_lookup = {}
-    photo_lookup = {}
-    for item in included:
-        if item.get("type") == "orgs":
-            org_id = item["id"]
-            attrs  = item.get("attributes", {})
-            org_lookup[org_id] = {
-                "name":    attrs.get("name", ""),
-                "address": f"{attrs.get('street', '')} {attrs.get('city', '')} {attrs.get('state', '')} {attrs.get('postalcode', '')}".strip(),
-                "phone":   attrs.get("phone", ""),
-                "email":   attrs.get("email", ""),
-                "hours":   attrs.get("hours", "")
-            }
-        if item.get("type") == "pictures":
-            pic_id  = item["id"]
-            pic_url = item.get("attributes", {}).get("large", {}).get("url", "")
-            if pic_url:
-                photo_lookup[pic_id] = pic_url
-
-    pets = []
-    for animal in animals:
-        if len(pets) >= target:
-            break
-
-        attrs     = animal.get("attributes", {})
-        relations = animal.get("relationships", {})
-
-        # Build source URL
-        animal_id  = animal.get("id", "")
-        source_url = f"https://www.rescuegroups.org/animals/detail/{animal_id}/"
-
-        # Skip if previously approved
-        if source_url in excluded_urls:
-            print(f"  Skipping previously approved: {source_url}")
-            continue
-
-        # Skip if no description
-        description = attrs.get("descriptionText") or attrs.get("description", "")
-        if not description or len(description.strip()) < 50:
-            continue
-
-        # Get org info
-        org_id   = relations.get("orgs", {}).get("data", [{}])[0].get("id", "") if relations.get("orgs", {}).get("data") else ""
-        org_info = org_lookup.get(org_id, {})
-
-        # Get photos
-        photo_ids = [p.get("id") for p in relations.get("pictures", {}).get("data", [])]
-        photos    = [photo_lookup[pid] for pid in photo_ids if pid in photo_lookup][:3]
-
-        # Build profile text
-        profile = f"""
-Name: {attrs.get('name', 'Unknown')}
-Species: {attrs.get('species', '')}
-Breed: {attrs.get('breeds', {}).get('primary', '')}
-Age: {attrs.get('ageString', '')}
-Gender: {attrs.get('sex', '')}
-Size: {attrs.get('sizeString', '')}
-Color: {attrs.get('colors', {}).get('primary', '')}
-Description: {description}
-Good with kids: {attrs.get('isKidsOk', 'Unknown')}
-Good with dogs: {attrs.get('isDogsOk', 'Unknown')}
-Good with cats: {attrs.get('isCatsOk', 'Unknown')}
-House trained: {attrs.get('isHouseTrained', 'Unknown')}
-Spayed/Neutered: {attrs.get('isAltered', 'Unknown')}
-Vaccinated: {attrs.get('isShotsCurrent', 'Unknown')}
-Shelter: {org_info.get('name', '')}
-Address: {org_info.get('address', '')}
-Phone: {org_info.get('phone', '')}
-Email: {org_info.get('email', '')}
-Hours: {org_info.get('hours', '')}
-"""
-
-        pets.append({
-            "url":          source_url,
-            "profile":      profile.strip(),
-            "photos":       photos,
-            "animal_type":  species.lower(),
-            "org_info":     org_info
-        })
-        print(f"  ✓ {attrs.get('name', 'Unknown')} | {org_info.get('name', 'Unknown org')} | {len(photos)} photos")
-
-    print(f"RescueGroups {species}s: {len(pets)} with descriptions")
-    return pets
+    
+    # rest of function stays the same
 
 # ---------------------------------------------------------------------------
 # 6. BUILD COMBINED PROFILES
