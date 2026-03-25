@@ -421,10 +421,8 @@ def save_to_sheets(results: list[dict]) -> None:
 if __name__ == "__main__":
     print(f"Starting newsletter automation — {datetime.today().strftime('%Y-%m-%d')}")
 
-    # Load skill prompt from repo
     skill_prompt = load_skill_prompt()
 
-    # Scrape both sources
     humane_pets    = scrape_humane_society()
     petfinder_pets = scrape_petfinder()
     all_pets       = petfinder_pets + humane_pets
@@ -434,7 +432,6 @@ if __name__ == "__main__":
         print("No pets found. Exiting.")
         exit(1)
 
-    # Filter out previously featured pets
     featured_urls = get_featured_urls()
     fresh_pets = [p for p in all_pets if p["url"] not in featured_urls]
     print(f"Fresh pets after filtering history: {len(fresh_pets)}")
@@ -442,14 +439,9 @@ if __name__ == "__main__":
     if not fresh_pets:
         print("All scraped pets have been featured before. Exiting.")
         exit(1)
-    
-    # Generate blurbs via Claude
+
     results = generate_blurb(fresh_pets, skill_prompt)
-    
-    # Score blurbs via Claude
-    results = score_blurbs(results, fresh_pets)
-    
-    # Save to Google Sheets
+    results = score_blurbs(results, fresh_pets)  # ← new line
     save_to_sheets(results)
 
     print("\nDone.")
