@@ -79,16 +79,26 @@ async function pageFunction(context) {
                 },
                 timeout=120
             )
-            if run_res.status_code not in [200, 201]:
-                print(f"Apify error {run_res.status_code}: {run_res.text[:200]}")
-                if attempt < retries - 1:
-                    time.sleep(3)
-                    continue
+
+            # Accept both 200 and 201 as success
+            if run_res.status_code in [200, 201]:
+                items = run_res.json()
+                if items and len(items) > 0:
+                    return items[0].get("html")
                 return None
-            items = run_res.json()
-            if items and len(items) > 0:
-                return items[0].get("html")
+
+            # Handle memory limit -- wait and retry
+            if run_res.status_code == 402:
+                print(f"Apify memory limit hit, waiting 30s before retry...")
+                time.sleep(30)
+                continue
+
+            print(f"Apify error {run_res.status_code}: {run_res.text[:200]}")
+            if attempt < retries - 1:
+                time.sleep(5)
+                continue
             return None
+
         except requests.exceptions.ReadTimeout:
             print(f"Timeout on attempt {attempt + 1} for {url}")
             if attempt < retries - 1:
@@ -96,13 +106,6 @@ async function pageFunction(context) {
             else:
                 print(f"Skipping {url} after {retries} attempts")
                 return None
-
-def clean_soup(html: str) -> BeautifulSoup:
-    soup = BeautifulSoup(html, "html.parser")
-    for tag in soup(["script", "style", "noscript", "header", "footer", "nav"]):
-        tag.decompose()
-    return soup
-
 # ---------------------------------------------------------------------------
 # 5. LOAD PREVIOUSLY APPROVED URLS
 # ---------------------------------------------------------------------------
