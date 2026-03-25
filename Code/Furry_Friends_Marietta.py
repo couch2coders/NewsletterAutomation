@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """
 Newsletter Automation - Pet Adoption Section
-Scrapes Atlanta Humane Society and Petfinder, generates blurb via Claude,
-and writes the result to Google Sheets.
+Scrapes Atlanta Humane Society and Petfinder for cats and dogs,
+generates blurbs via Claude, scores them, flags defaults,
+and writes results to Google Sheets.
 """
 
 import os
@@ -19,10 +20,10 @@ from google.oauth2.service_account import Credentials
 from googleapiclient.discovery import build
 
 NEWSLETTER_NAME = "East_Cobb_Connect"
-# ---------------------------------------------------------------------------
-# 1. ENVIRONMENT — all values injected by GitHub Actions secrets
-# ---------------------------------------------------------------------------
 
+# ---------------------------------------------------------------------------
+# 1. ENVIRONMENT
+# ---------------------------------------------------------------------------
 CLAUDE_API_KEY          = os.environ["CLAUDE_API_KEY"]
 ZYTE_API_KEY            = os.environ["ZYTE_API_KEY"]
 GOOGLE_CREDENTIALS_JSON = os.environ["GOOGLE_CREDENTIALS_JSON"]
@@ -31,9 +32,8 @@ GSHEET_TAB              = "Pets"
 SKILL_PROMPT_PATH       = Path(__file__).parent.parent / "Skills" / "newsletter-pet-adoption-skill_auto.md"
 
 # ---------------------------------------------------------------------------
-# 2. GOOGLE AUTH (service account — headless, no browser required)
+# 2. GOOGLE AUTH
 # ---------------------------------------------------------------------------
-
 creds_dict = json.loads(GOOGLE_CREDENTIALS_JSON)
 creds = Credentials.from_service_account_info(
     creds_dict,
@@ -42,15 +42,11 @@ creds = Credentials.from_service_account_info(
 sheets_service = build("sheets", "v4", credentials=creds)
 
 # ---------------------------------------------------------------------------
-# 3. LOAD SKILL PROMPT FROM REPO
+# 3. LOAD SKILL PROMPT
 # ---------------------------------------------------------------------------
-
 def load_skill_prompt() -> str:
     if not SKILL_PROMPT_PATH.exists():
-        raise FileNotFoundError(
-            f"Skill prompt not found at {SKILL_PROMPT_PATH}. "
-            "Make sure newsletter-pet-adoption-skill_auto.md is in the repo root."
-        )
+        raise FileNotFoundError(f"Skill prompt not found at {SKILL_PROMPT_PATH}.")
     prompt = SKILL_PROMPT_PATH.read_text(encoding="utf-8")
     print(f"Loaded skill prompt ({len(prompt)} chars)")
     return prompt
@@ -58,7 +54,6 @@ def load_skill_prompt() -> str:
 # ---------------------------------------------------------------------------
 # 4. SCRAPING HELPERS
 # ---------------------------------------------------------------------------
-
 def fetch_with_zyte(url: str, retries: int = 2) -> str | None:
     for attempt in range(retries):
         try:
@@ -77,7 +72,6 @@ def fetch_with_zyte(url: str, retries: int = 2) -> str | None:
                 print(f"Skipping {url} after {retries} attempts")
                 return None
 
-
 def clean_soup(html: str) -> BeautifulSoup:
     soup = BeautifulSoup(html, "html.parser")
     for tag in soup(["script", "style", "noscript", "header", "footer", "nav"]):
@@ -85,11 +79,26 @@ def clean_soup(html: str) -> BeautifulSoup:
     return soup
 
 # ---------------------------------------------------------------------------
-# 5. SCRAPE ATLANTA HUMANE SOCIETY
+# 5. LOAD PREVIOUSLY APPROVED URLS
 # ---------------------------------------------------------------------------
+def get_approved_urls() -> set[str]:
+    result = sheets_service.spreadsheets().values().get(
+        spreadsheetId=GSHEET_ID,
+        range=f"{GSHEET_TAB}!A:K"
+    ).execute()
+    rows = result.get("values", [])
+    approved = set()
+    for row in rows[1:]:
+        if len(row) >= 11 and row[10] == "approved":
+            approved.add(row[0])
+    print(f"Loaded {len(approved)} previously approved URLs to exclude")
+    return approved
 
-def scrape_humane_society() -> list[dict]:
-    print("\n--- Scraping Atlanta Humane Society ---")
+# ---------------------------------------------------------------------------
+# 6. SCRAPE ATLANTA HUMANE SOCIETY - CATS
+# ---------------------------------------------------------------------------
+def scrape_humane_society_cats(excluded_urls: set, target: int = 6) -> list[dict]:
+    print("\n--- Scraping Atlanta Humane Society (Cats) ---")
     listing_url = (
         "https://atlantahumane.org/adopt/cats/"
         "?PrimaryBreed=0&Location_4=Marietta&PrimaryColor=0"
@@ -97,7 +106,7 @@ def scrape_humane_society() -> list[dict]:
     )
     html = fetch_with_zyte(listing_url)
     if not html:
-        print("Failed to fetch Humane Society listing page")
+        print("Failed to fetch Humane Society cat listing page")
         return []
 
     soup = clean_soup(html)
@@ -105,12 +114,40 @@ def scrape_humane_society() -> list[dict]:
     pet_links = list(set([
         a["href"] for a in links
         if "/adopt/" in a["href"] and "aid=" in a["href"]
+        and a["href"] not in excluded_urls
     ]))
-    print(f"Found {len(pet_links)} Marietta cat links")
+    print(f"Found {len(pet_links)} candidate cat links")
 
+    return _scrape_humane_detail_pages(pet_links, excluded_urls, target, "cat")
+
+# ---------------------------------------------------------------------------
+# 7. SCRAPE ATLANTA HUMANE SOCIETY - DOGS
+# ---------------------------------------------------------------------------
+def scrape_humane_society_dogs(excluded_urls: set, target: int = 6) -> list[dict]:
+    print("\n--- Scraping Atlanta Humane Society (Dogs) ---")
+    listing_url = "https://atlantahumane.org/adopt/dogs/"
+    html = fetch_with_zyte(listing_url)
+    if not html:
+        print("Failed to fetch Humane Society dog listing page")
+        return []
+
+    soup = clean_soup(html)
+    links = soup.find_all("a", href=True)
+    pet_links = list(set([
+        a["href"] for a in links
+        if "/adopt/" in a["href"] and "aid=" in a["href"]
+        and a["href"] not in excluded_urls
+    ]))
+    print(f"Found {len(pet_links)} candidate dog links")
+
+    return _scrape_humane_detail_pages(pet_links, excluded_urls, target, "dog")
+
+def _scrape_humane_detail_pages(pet_links: list, excluded_urls: set, target: int, animal_type: str) -> list[dict]:
     pets = []
 
     def fetch_and_parse(url):
+        if url in excluded_urls:
+            return None
         html = fetch_with_zyte(url)
         if html is None:
             return None
@@ -121,6 +158,8 @@ def scrape_humane_society() -> list[dict]:
     with ThreadPoolExecutor(max_workers=5) as executor:
         futures = {executor.submit(fetch_and_parse, url): url for url in pet_links}
         for future in as_completed(futures):
+            if len(pets) >= target:
+                break
             result = future.result()
             if result is None:
                 continue
@@ -132,30 +171,34 @@ def scrape_humane_society() -> list[dict]:
                     photos = [
                         img.get("src") for img in soup.find_all("img")
                         if img.get("src") and "petango.com" in img.get("src")
-                    ]
-                    pets.append({"url": url, "profile": clean_text, "photos": photos})
-                    print(f"  ✓ Has description: {url} | {len(photos)} photos")
+                    ][:3]
+                    pets.append({"url": url, "profile": clean_text, "photos": photos, "animal_type": animal_type})
+                    print(f"  ✓ {animal_type}: {url} | {len(photos)} photos")
                 else:
                     print(f"  ✗ No description: {url}")
 
-    print(f"Humane Society: {len(pets)} cats with descriptions")
+    print(f"Humane Society {animal_type}s: {len(pets)} with descriptions")
     return pets
 
 # ---------------------------------------------------------------------------
-# 6. SCRAPE PETFINDER
+# 8. SCRAPE PETFINDER - CATS & DOGS
 # ---------------------------------------------------------------------------
-
 def scrape_petfinder(
-    max_with_description: int = 5,
-    max_total_fetched: int = 10,
+    animal_type: str,
+    excluded_urls: set,
+    target: int = 6,
+    max_total_fetched: int = 15,
     max_pages: int = 3
 ) -> list[dict]:
-    print("\n--- Scraping Petfinder ---")
+    print(f"\n--- Scraping Petfinder ({animal_type}s) ---")
     base_url = "https://www.petfinder.com"
-    listing_url = (
-        "https://www.petfinder.com/search/cats-for-adoption/us/ga/eastcobb/"
-        "?includeOutOfTown=true&distance=25&page={page}"
-    )
+
+    if animal_type == "cat":
+        listing_url = "https://www.petfinder.com/search/cats-for-adoption/us/ga/eastcobb/?includeOutOfTown=true&distance=25&page={page}"
+        detail_pattern = "/cat/"
+    else:
+        listing_url = "https://www.petfinder.com/search/dogs-for-adoption/us/ga/eastcobb/?includeOutOfTown=true&distance=25&page={page}"
+        detail_pattern = "/dog/"
 
     all_pet_links = []
     for page in range(1, max_pages + 1):
@@ -167,7 +210,8 @@ def scrape_petfinder(
         links = soup.find_all("a", href=True)
         page_links = list(set([
             a["href"] for a in links
-            if "/cat/" in a["href"] and "/details/" in a["href"]
+            if detail_pattern in a["href"] and "/details/" in a["href"]
+            and base_url + a["href"] not in excluded_urls
         ]))
         all_pet_links.extend(page_links)
         print(f"    {len(page_links)} links on page {page} ({len(all_pet_links)} total)")
@@ -181,12 +225,14 @@ def scrape_petfinder(
     total_fetched = 0
 
     for url in full_links:
-        if len(pets) >= max_with_description:
-            print("  Reached description limit. Stopping.")
+        if len(pets) >= target:
+            print(f"  Reached {target} {animal_type}s with descriptions. Stopping.")
             break
         if total_fetched >= max_total_fetched:
-            print("  Reached fetch limit. Stopping.")
+            print(f"  Reached fetch limit. Stopping.")
             break
+        if url in excluded_urls:
+            continue
 
         html = fetch_with_zyte(url)
         total_fetched += 1
@@ -203,34 +249,19 @@ def scrape_petfinder(
                 and "cloudfront.net" in img.get("src")
                 and "Enlarge" not in (img.get("alt") or "")
             ][:3]
-            pets.append({"url": url, "profile": clean_text, "photos": photos})
-            print(f"  ✓ {total_fetched} fetched | {len(pets)} with description: {url}")
+            pets.append({"url": url, "profile": clean_text, "photos": photos, "animal_type": animal_type})
+            print(f"  ✓ {total_fetched} fetched | {len(pets)} {animal_type}s: {url}")
         else:
             print(f"  ✗ No description: {url}")
 
         time.sleep(1)
 
-    print(f"Petfinder: {len(pets)} cats with descriptions from {total_fetched} fetched")
+    print(f"Petfinder {animal_type}s: {len(pets)} with descriptions from {total_fetched} fetched")
     return pets
 
 # ---------------------------------------------------------------------------
-# 7. LOAD FEATURED HISTORY FROM GOOGLE SHEETS
+# 9. BUILD COMBINED PROFILES
 # ---------------------------------------------------------------------------
-
-def get_featured_urls() -> set[str]:
-    result = sheets_service.spreadsheets().values().get(
-        spreadsheetId=GSHEET_ID,
-        range=f"{GSHEET_TAB}!A:A"  # source_url is column A
-    ).execute()
-    rows = result.get("values", [])
-    urls = {row[0] for row in rows[1:] if row}  # skip header row
-    print(f"Loaded {len(urls)} previously featured URLs from Sheets")
-    return urls
-
-# ---------------------------------------------------------------------------
-# 8. GENERATE BLURB VIA CLAUDE
-# ---------------------------------------------------------------------------
-
 def build_combined_profiles(pets: list[dict]) -> str:
     combined = ""
     for i, pet in enumerate(pets, 1):
@@ -244,7 +275,10 @@ Profile:
 """
     return combined
 
-def generate_blurb(pets: list[dict], skill_prompt: str) -> list[dict]:
+# ---------------------------------------------------------------------------
+# 10. GENERATE BLURBS VIA CLAUDE
+# ---------------------------------------------------------------------------
+def generate_blurb(pets: list[dict], skill_prompt: str, animal_type: str) -> list[dict]:
     client = anthropic.Anthropic(api_key=CLAUDE_API_KEY)
     combined_profiles = build_combined_profiles(pets)
 
@@ -255,7 +289,7 @@ def generate_blurb(pets: list[dict], skill_prompt: str) -> list[dict]:
         messages=[{
             "role": "user",
             "content": f"""
-Here are adoptable cats from shelters near East Cobb, GA.
+Here are adoptable {animal_type}s from shelters near East Cobb, GA.
 Pick the TOP 3 with the best story potential and write a blurb for each.
 Use the pet's actual description -- do not invent details.
 
@@ -263,15 +297,16 @@ Return ONLY a JSON array with exactly 3 objects, no preamble or markdown.
 Exact format:
 [
   {{
-    "pet_name": "Patrick Star",
-    "shelter_name": "Good Mews Animal Foundation",
+    "pet_name": "Name",
+    "shelter_name": "Shelter Name",
     "blurb": "Full blurb text here...",
-    "shelter_address": "3805 Robinson Road NW, Marietta, GA 30067",
-    "shelter_phone": "(770) 499-2287",
-    "shelter_email": "adopt@goodmews.org",
-    "shelter_hours": "Mon-Fri 12-6pm, Sat-Sun 11am-5pm",
+    "shelter_address": "address",
+    "shelter_phone": "phone",
+    "shelter_email": "email",
+    "shelter_hours": "hours",
     "source_url": "https://...",
-    "photo_url": "https://... or null"
+    "photo_url": "https://... or null",
+    "animal_type": "{animal_type}"
   }},
   {{...}},
   {{...}}
@@ -294,14 +329,13 @@ Mon-Fri 12-6pm, Sat-Sun 11am-5pm
     raw = next(block.text for block in response.content if block.type == "text")
     clean = raw.strip().removeprefix("```json").removesuffix("```").strip()
     results = json.loads(clean)
-    print(f"Generated {len(results)} blurbs")
+    print(f"Generated {len(results)} {animal_type} blurbs")
     return results
 
 # ---------------------------------------------------------------------------
-# 8A. EVALUATE CLAUDE BLURB AND ADD SCORE
+# 11. SCORE BLURBS VIA CLAUDE
 # ---------------------------------------------------------------------------
-
-def score_blurbs(results: list[dict], pets: list[dict]) -> list[dict]:
+def score_blurbs(results: list[dict]) -> list[dict]:
     client = anthropic.Anthropic(api_key=CLAUDE_API_KEY)
 
     scoring_input = ""
@@ -322,16 +356,16 @@ Source URL: {result['source_url']}
             "role": "user",
             "content": f"""
 You are evaluating pet adoption blurbs for a local newsletter editor.
-Score each candidate on a 0-10 scale for each of the following criteria:
+Score each candidate on a 0-10 scale for each criteria:
 
-1. Adoptability: How easy and appealing is this pet to adopt? Consider compatibility, special needs, and fit for a typical family.
-2. Interesting Story: How compelling and unique is this pet's backstory? Does it have personality details that make readers want to meet them?
-3. Time at Shelter: Based on clues in the blurb (returned pet, long wait, came from another shelter, etc.), estimate how long this pet has been waiting. Longer wait = higher score.
+1. Adoptability: How easy and appealing is this pet to adopt?
+2. Interesting Story: How compelling and unique is the backstory?
+3. Time at Shelter: Longer wait = higher score based on clues in the blurb.
 
 Return ONLY a JSON array with no preamble or markdown. Exact format:
 [
   {{
-    "pet_name": "Patrick Star",
+    "pet_name": "Name",
     "source_url": "https://...",
     "adoptability_score": 8,
     "story_score": 7,
@@ -339,16 +373,14 @@ Return ONLY a JSON array with no preamble or markdown. Exact format:
     "total_score": 20,
     "scoring_notes": "• Strong adoption candidate with broad family appeal\\n• Returned pet with a clear sympathetic backstory readers will connect with\\n• Has been waiting longer than average based on shelter history clues"
   }},
-  {{...}},
   {{...}}
 ]
 
 Rules for scoring_notes:
 - Exactly 3 bullet points per candidate
 - Format: • [point]\\n• [point]\\n• [point]
-- Each bullet is a concise exec-level reason why this cat should be featured this week
+- Each bullet is a concise exec-level reason why this pet should be featured
 - Focus on newsletter appeal, reader connection, and urgency to adopt
-- Write for a newsletter editor making a quick decision, not a shelter worker
 
 Candidates to score:
 {scoring_input}
@@ -360,7 +392,6 @@ Candidates to score:
     clean = raw.strip().removeprefix("```json").removesuffix("```").strip()
     scores = json.loads(clean)
 
-    # Merge scores back into results
     score_map = {s["source_url"]: s for s in scores}
     for result in results:
         score_data = score_map.get(result["source_url"], {})
@@ -370,19 +401,55 @@ Candidates to score:
         result["total_score"]        = score_data.get("total_score", 0)
         result["scoring_notes"]      = score_data.get("scoring_notes", "")
 
-    # Sort by total score descending
     results.sort(key=lambda x: x["total_score"], reverse=True)
 
     for r in results:
-        print(f"  {r['pet_name']}: {r['total_score']}/30 | adoptability: {r['adoptability_score']} | story: {r['story_score']} | shelter time: {r['shelter_time_score']}")
-        print(f"  Notes: {r['scoring_notes'][:80]}...")
+        print(f"  {r['pet_name']} ({r.get('animal_type','?')}): {r['total_score']}/30")
 
     return results
 
 # ---------------------------------------------------------------------------
-# 9. SAVE RESULT TO GOOGLE SHEETS
+# 12. FLAG DEFAULT WINNERS
 # ---------------------------------------------------------------------------
+def flag_default_winners(cat_results: list[dict], dog_results: list[dict]) -> tuple[list[dict], list[dict]]:
+    # Get current week number to determine default
+    week_number = datetime.today().isocalendar()[1]
+    odd_week = week_number % 2 != 0
 
+    # Flag top cat
+    if cat_results:
+        cat_results[0]["cat_default"] = "yes"
+        cat_results[0]["dog_default"] = ""
+        for r in cat_results[1:]:
+            r["cat_default"] = ""
+            r["dog_default"] = ""
+        print(f"Cat default winner: {cat_results[0]['pet_name']} (score: {cat_results[0]['total_score']})")
+
+    # Flag top dog
+    if dog_results:
+        dog_results[0]["dog_default"] = "yes"
+        dog_results[0]["cat_default"] = ""
+        for r in dog_results[1:]:
+            r["dog_default"] = ""
+            r["cat_default"] = ""
+        print(f"Dog default winner: {dog_results[0]['pet_name']} (score: {dog_results[0]['total_score']})")
+
+    # Flag overall default winner based on week number
+    for r in cat_results + dog_results:
+        r["default_winner"] = ""
+
+    if odd_week and cat_results:
+        cat_results[0]["default_winner"] = "yes"
+        print(f"Week {week_number} (odd) — default winner: {cat_results[0]['pet_name']} (cat)")
+    elif not odd_week and dog_results:
+        dog_results[0]["default_winner"] = "yes"
+        print(f"Week {week_number} (even) — default winner: {dog_results[0]['pet_name']} (dog)")
+
+    return cat_results, dog_results
+
+# ---------------------------------------------------------------------------
+# 13. SAVE TO GOOGLE SHEETS
+# ---------------------------------------------------------------------------
 def save_to_sheets(results: list[dict]) -> None:
     rows = []
     for data in results:
@@ -404,44 +471,63 @@ def save_to_sheets(results: list[dict]) -> None:
             data.get("adoptability_score", ""),
             data.get("story_score", ""),
             data.get("shelter_time_score", ""),
-            data.get("scoring_notes", "")
+            data.get("scoring_notes", ""),
+            data.get("default_winner", ""),
+            data.get("cat_default", ""),
+            data.get("dog_default", ""),
+            data.get("animal_type", "")
         ])
     sheets_service.spreadsheets().values().append(
         spreadsheetId=GSHEET_ID,
-        range=f"{GSHEET_TAB}!A:R",
+        range=f"{GSHEET_TAB}!A:V",
         valueInputOption="RAW",
         body={"values": rows}
     ).execute()
     print(f"Saved {len(rows)} rows to Google Sheets")
-  
-# ---------------------------------------------------------------------------
-# 10. MAIN
-# ---------------------------------------------------------------------------
 
+# ---------------------------------------------------------------------------
+# 14. MAIN
+# ---------------------------------------------------------------------------
 if __name__ == "__main__":
     print(f"Starting newsletter automation — {datetime.today().strftime('%Y-%m-%d')}")
 
     skill_prompt = load_skill_prompt()
 
-    humane_pets    = scrape_humane_society()
-    petfinder_pets = scrape_petfinder()
-    all_pets       = petfinder_pets + humane_pets
-    print(f"\nTotal pets scraped: {len(all_pets)}")
+    # Load approved URLs to exclude
+    approved_urls = get_approved_urls()
 
-    if not all_pets:
+    # Scrape cats
+    humane_cats    = scrape_humane_society_cats(approved_urls, target=6)
+    petfinder_cats = scrape_petfinder("cat", approved_urls, target=6)
+    all_cats       = petfinder_cats + humane_cats
+    print(f"\nTotal cats scraped: {len(all_cats)}")
+
+    # Scrape dogs
+    humane_dogs    = scrape_humane_society_dogs(approved_urls, target=6)
+    petfinder_dogs = scrape_petfinder("dog", approved_urls, target=6)
+    all_dogs       = petfinder_dogs + humane_dogs
+    print(f"Total dogs scraped: {len(all_dogs)}")
+
+    if not all_cats and not all_dogs:
         print("No pets found. Exiting.")
         exit(1)
 
-    featured_urls = get_featured_urls()
-    fresh_pets = [p for p in all_pets if p["url"] not in featured_urls]
-    print(f"Fresh pets after filtering history: {len(fresh_pets)}")
+    # Generate and score cat blurbs
+    cat_results, dog_results = [], []
 
-    if not fresh_pets:
-        print("All scraped pets have been featured before. Exiting.")
-        exit(1)
+    if all_cats:
+        cat_results = generate_blurb(all_cats, skill_prompt, "cat")
+        cat_results = score_blurbs(cat_results)
 
-    results = generate_blurb(fresh_pets, skill_prompt)
-    results = score_blurbs(results, fresh_pets)  # ← new line
-    save_to_sheets(results)
+    if all_dogs:
+        dog_results = generate_blurb(all_dogs, skill_prompt, "dog")
+        dog_results = score_blurbs(dog_results)
 
-    print("\nDone.")
+    # Flag default winners
+    cat_results, dog_results = flag_default_winners(cat_results, dog_results)
+
+    # Save all to Google Sheets
+    all_results = cat_results + dog_results
+    save_to_sheets(all_results)
+
+    print(f"\nDone. Saved {len(all_results)} total rows.")
