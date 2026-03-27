@@ -7,6 +7,7 @@ and writes results to Google Sheets.
 """
 
 import os
+import re
 import json
 import time
 from datetime import datetime
@@ -71,6 +72,16 @@ def get_approved_urls() -> set[str]:
 # ---------------------------------------------------------------------------
 # 5. FETCH PETS FROM RESCUEGROUPS API
 # ---------------------------------------------------------------------------
+
+def extract_url_from_description(description: str) -> str:
+    """Extract the first https URL from the description text."""
+    urls = re.findall(r'https?://[^\s<>"]+', description)
+    # Filter out tracker and facebook URLs
+    for url in urls:
+        if "tracker.rescuegroups" not in url and "facebook.com" not in url:
+            return url.rstrip('/')
+    return ""
+    
 def fetch_rescuegroups(species: str, excluded_urls: set, target: int = 5) -> list[dict]:
     print(f"\n--- Fetching {species}s from RescueGroups API ---")
 
@@ -153,7 +164,12 @@ def fetch_rescuegroups(species: str, excluded_urls: set, target: int = 5) -> lis
         org_info = org_lookup.get(org_id, {})
     
         org_url    = org_info.get("url", "")
-        source_url = org_url if org_url else f"https://www.rescuegroups.org/animals/detail/{animal_id}/"
+
+        desc_html  = attrs.get("descriptionHtml", "")
+        
+        desc_url   = extract_url_from_description(desc_html)
+        org_url    = org_info.get("url", "")
+        source_url = desc_url or org_url or f"https://www.google.com/search?q={org_info.get('name', '').replace(' ', '+')}"
 
         if source_url in excluded_urls:
             print(f"  Skipping previously approved: {source_url}")
