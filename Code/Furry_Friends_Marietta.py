@@ -110,14 +110,14 @@ def fetch_rescuegroups(species: str, excluded_urls: set, target: int = 5) -> lis
     animals  = data.get("data", [])
     included = data.get("included", [])
 
-    for animal in animals[:1]:  # just first animal
-        attrs     = animal.get("attributes", {})
-        relations = animal.get("relationships", {})
-        print(f"Relationships: {json.dumps(relations, indent=2)}")
-        print(f"Included count: {len(included)}")
-        print(f"First included item: {json.dumps(included[0], indent=2) if included else 'EMPTY'}")
-        break
-    print(f"Found {len(animals)} {species}s within {SEARCH_RADIUS_MILES} miles of {ANCHOR_ZIP}")
+    # for animal in animals[:1]:  # just first animal
+    #     attrs     = animal.get("attributes", {})
+    #     relations = animal.get("relationships", {})
+    #     print(f"Relationships: {json.dumps(relations, indent=2)}")
+    #     print(f"Included count: {len(included)}")
+    #     print(f"First included item: {json.dumps(included[0], indent=2) if included else 'EMPTY'}")
+    #     break
+    # print(f"Found {len(animals)} {species}s within {SEARCH_RADIUS_MILES} miles of {ANCHOR_ZIP}")
 
 
     
@@ -140,6 +140,10 @@ def fetch_rescuegroups(species: str, excluded_urls: set, target: int = 5) -> lis
             pic_url = item.get("attributes", {}).get("large", {}).get("url", "")
             if pic_url:
                 photo_lookup[pic_id] = pic_url
+
+    for org_id, org_data in org_lookup.items():
+        print(f"  Org {org_id}: {org_data}")
+        break  # just first org
     
     pets = []
     for animal in animals:
