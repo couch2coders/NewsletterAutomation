@@ -112,10 +112,12 @@ def fetch_rescuegroups(species: str, excluded_urls: set, target: int = 5) -> lis
     try:
         response = requests.post(url, headers=headers, json=payload, params=params, timeout=30)
         print(f"Status: {response.status_code}")
-        if response.status_code != 200:
-            print(f"Response: {response.text[:500]}")
-            return []
+        print(f"Response: {response.text[:500]}")
+        response.raise_for_status()
         data = response.json()
+    except requests.exceptions.HTTPError as e:
+        print(f"HTTP Error: {e}")
+        return []
     except Exception as e:
         print(f"RescueGroups API error: {e}")
         return []
