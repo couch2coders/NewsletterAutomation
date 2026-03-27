@@ -22,9 +22,6 @@ NEWSLETTER_NAME     = "East_Cobb_Connect"
 ANCHOR_ZIP          = "30062"
 SEARCH_RADIUS_MILES = 25
 
-RESCUEGROUPS_API_KEY = os.environ["RESCUE_GROUP_API_KEY"]
-print(f"API key loaded: {RESCUEGROUPS_API_KEY[:5]}...")  # shows first 5 chars only
-
 # ---------------------------------------------------------------------------
 # 1. ENVIRONMENT
 # ---------------------------------------------------------------------------
@@ -94,10 +91,7 @@ def fetch_rescuegroups(species: str, excluded_urls: set, target: int = 5) -> lis
         }
     }
 
-    params = {
-        "limit": 50,
-        "include[]": ["pictures", "orgs"]
-    }
+    params = {}
 
     try:
         response = requests.post(url, headers=headers, json=payload, params=params, timeout=30)
