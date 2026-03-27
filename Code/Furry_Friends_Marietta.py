@@ -20,7 +20,7 @@ from googleapiclient.discovery import build
 
 NEWSLETTER_NAME     = "East_Cobb_Connect"
 ANCHOR_ZIP          = "30062"
-SEARCH_RADIUS_MILES = 5
+SEARCH_RADIUS_MILES = 25
 
 RESCUEGROUPS_API_KEY = os.environ["RESCUE_GROUP_API_KEY"]
 print(f"API key loaded: {RESCUEGROUPS_API_KEY[:5]}...")  # shows first 5 chars only
@@ -80,20 +80,10 @@ def fetch_rescuegroups(species: str, excluded_urls: set, target: int = 5) -> lis
     # Use views in URL: available + cats or dogs
     url = f"https://api.rescuegroups.org/v5/public/animals/search/available/{species.lower()}s/"
 
-    # headers = {
-    #     "Authorization": f"apikey {RESCUEGROUPS_API_KEY}",
-    #     "Content-Type": "application/vnd.api+json"
-    # }
-
     headers = {
     "Authorization": RESCUEGROUPS_API_KEY,
     "Content-Type": "application/vnd.api+json"
     }
-    
-    # headers = {
-    #     "Authorization": RESCUEGROUPS_API_KEY,
-    #     "Content-Type": "application/vnd.api+json"
-    # }
 
     payload = {
         "data": {
@@ -125,8 +115,84 @@ def fetch_rescuegroups(species: str, excluded_urls: set, target: int = 5) -> lis
     animals  = data.get("data", [])
     included = data.get("included", [])
     print(f"Found {len(animals)} {species}s within {SEARCH_RADIUS_MILES} miles of {ANCHOR_ZIP}")
+
+    # Build org lookup from included data
+        org_lookup = {}
+        photo_lookup = {}
+        for item in included:
+            if item.get("type") == "orgs":
+                org_id = item["id"]
+                attrs  = item.get("attributes", {})
+                org_lookup[org_id] = {
+                    "name":    attrs.get("name", ""),
+                    "address": f"{attrs.get('street', '')} {attrs.get('city', '')} {attrs.get('state', '')} {attrs.get('postalcode', '')}".strip(),
+                    "phone":   attrs.get("phone", ""),
+                    "email":   attrs.get("email", ""),
+                    "hours":   attrs.get("hours", "")
+                }
+            if item.get("type") == "pictures":
+                pic_id  = item["id"]
+                pic_url = item.get("attributes", {}).get("large", {}).get("url", "")
+                if pic_url:
+                    photo_lookup[pic_id] = pic_url
     
-    # rest of function stays the same
+        pets = []
+        for animal in animals:
+            if len(pets) >= target:
+                break
+    
+            attrs     = animal.get("attributes", {})
+            relations = animal.get("relationships", {})
+    
+            animal_id  = animal.get("id", "")
+            source_url = f"https://www.rescuegroups.org/animals/detail/{animal_id}/"
+    
+            if source_url in excluded_urls:
+                print(f"  Skipping previously approved: {source_url}")
+                continue
+    
+            description = attrs.get("descriptionText") or attrs.get("descriptionHtml", "")
+            if not description or len(description.strip()) < 50:
+                continue
+    
+            org_id   = relations.get("orgs", {}).get("data", [{}])[0].get("id", "") if relations.get("orgs", {}).get("data") else ""
+            org_info = org_lookup.get(org_id, {})
+    
+            photo_ids = [p.get("id") for p in relations.get("pictures", {}).get("data", [])]
+            photos    = [photo_lookup[pid] for pid in photo_ids if pid in photo_lookup][:3]
+    
+            profile = f"""
+    Name: {attrs.get('name', 'Unknown')}
+    Species: {species}
+    Breed: {attrs.get('breedPrimary', '')}
+    Age: {attrs.get('ageString', '')}
+    Gender: {attrs.get('sex', '')}
+    Size: {attrs.get('sizeGroup', '')}
+    Description: {description}
+    Good with kids: {attrs.get('isKidsOk', 'Unknown')}
+    Good with dogs: {attrs.get('isDogsOk', 'Unknown')}
+    Good with cats: {attrs.get('isCatsOk', 'Unknown')}
+    House trained: {attrs.get('isHousetrained', 'Unknown')}
+    Spayed/Neutered: {attrs.get('isAltered', 'Unknown')}
+    Vaccinated: {attrs.get('isCurrentVaccinations', 'Unknown')}
+    Shelter: {org_info.get('name', '')}
+    Address: {org_info.get('address', '')}
+    Phone: {org_info.get('phone', '')}
+    Email: {org_info.get('email', '')}
+    Hours: {org_info.get('hours', '')}
+    """.strip()
+    
+            pets.append({
+                "url":         source_url,
+                "profile":     profile,
+                "photos":      photos,
+                "animal_type": species.lower(),
+                "org_info":    org_info
+            })
+            print(f"  ✓ {attrs.get('name', 'Unknown')} | {org_info.get('name', 'Unknown org')} | {len(photos)} photos")
+    
+        print(f"RescueGroups {species}s: {len(pets)} with descriptions")
+        return pets
 
 # ---------------------------------------------------------------------------
 # 6. BUILD COMBINED PROFILES
