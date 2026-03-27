@@ -150,10 +150,6 @@ def fetch_rescuegroups(species: str, excluded_urls: set, target: int = 5) -> lis
         relations = animal.get("relationships", {})
         animal_id = animal.get("id", "")
     
-        if source_url in excluded_urls:
-            print(f"  Skipping previously approved: {source_url}")
-            continue
-    
         description = attrs.get("descriptionText") or attrs.get("descriptionHtml", "")
         if not description or len(description.strip()) < 50:
             continue
@@ -163,7 +159,11 @@ def fetch_rescuegroups(species: str, excluded_urls: set, target: int = 5) -> lis
     
         org_url    = org_info.get("url", "")
         source_url = org_url if org_url else f"https://www.rescuegroups.org/animals/detail/{animal_id}/"
-    
+
+        if source_url in excluded_urls:
+            print(f"  Skipping previously approved: {source_url}")
+            continue
+            
         photo_ids = [p.get("id") for p in relations.get("pictures", {}).get("data", [])]
         photos    = [photo_lookup[pid] for pid in photo_ids if pid in photo_lookup][:3]
     
