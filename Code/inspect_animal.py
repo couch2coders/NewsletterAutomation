@@ -38,6 +38,12 @@ for key, value in animal.get("attributes", {}).items():
 # Print included data
 print("\n--- Included ---")
 for item in data.get("included", []):
-    print(f"\nType: {item.get('type')} | ID: {item.get('id')}")
-    for key, value in item.get("attributes", {}).items():
-        print(f"  {key}: {value}")
+    item_type = item.get("type")
+    item_id   = item.get("id")
+    attrs     = item.get("attributes", {})
+    print(f"\nType: {item_type} | ID: {item_id}")
+    if attrs:
+        for key, value in attrs.items():
+            print(f"  {key}: {value}")
+    else:
+        print("  (no attributes)")
