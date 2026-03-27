@@ -77,9 +77,14 @@ def fetch_rescuegroups(species: str, excluded_urls: set, target: int = 5) -> lis
     # Use views in URL: available + cats or dogs
     url = f"https://api.rescuegroups.org/v5/public/animals/search/available/{species.lower()}s/"
 
+    # headers = {
+    #     "Authorization": f"apikey {RESCUEGROUPS_API_KEY}",
+    #     "Content-Type": "application/vnd.api+json"
+    # }
+
     headers = {
-        "Authorization": f"apikey {RESCUEGROUPS_API_KEY}",
-        "Content-Type": "application/vnd.api+json"
+    "Authorization": RESCUEGROUPS_API_KEY,
+    "Content-Type": "application/vnd.api+json"
     }
     
     # headers = {
