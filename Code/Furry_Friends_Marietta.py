@@ -92,7 +92,8 @@ def fetch_rescuegroups(species: str, excluded_urls: set, target: int = 5) -> lis
     "Authorization": RESCUEGROUPS_API_KEY,
     "Content-Type": "application/vnd.api+json"
     }
-    
+
+
     payload = {
         "data": {
             "filterRadius": {
@@ -101,10 +102,9 @@ def fetch_rescuegroups(species: str, excluded_urls: set, target: int = 5) -> lis
             }
         },
         "fields": {
-            "orgs": ["name", "street", "city", "state", "postalcode", "phone", "email", "url"]
+            "orgs": ["name", "street", "city", "state", "postalcode", "phone", "email", "url", "adoptionUrl", "adoptionProcess"]
         }
     }
-
     params = {}
 
     try:
@@ -131,11 +131,13 @@ def fetch_rescuegroups(species: str, excluded_urls: set, target: int = 5) -> lis
             org_id = item["id"]
             attrs  = item.get("attributes", {})
             org_lookup[org_id] = {
-                "name":    attrs.get("name", ""),
-                "address": f"{attrs.get('street', '')} {attrs.get('city', '')} {attrs.get('state', '')} {attrs.get('postalcode', '')}".strip(),
-                "phone":   attrs.get("phone", ""),
-                "email":   attrs.get("email", ""),
-                "hours":   attrs.get("hours", "")
+                "name":             attrs.get("name", ""),
+                "address":          f"{attrs.get('street', '')} {attrs.get('city', '')} {attrs.get('state', '')} {attrs.get('postalcode', '')}".strip(),
+                "phone":            attrs.get("phone", ""),
+                "email":            attrs.get("email", ""),
+                "hours":            attrs.get("hours", ""),
+                "url":              attrs.get("url", ""),
+                "adoptionProcess":  attrs.get("adoptionProcess", "")
             }
         if item.get("type") == "pictures":
             pic_id  = item["id"]
@@ -159,15 +161,13 @@ def fetch_rescuegroups(species: str, excluded_urls: set, target: int = 5) -> lis
         description = attrs.get("descriptionText") or attrs.get("descriptionHtml", "")
         if not description or len(description.strip()) < 50:
             continue
-    
         org_id   = relations.get("orgs", {}).get("data", [{}])[0].get("id", "") if relations.get("orgs", {}).get("data") else ""
         org_info = org_lookup.get(org_id, {})
-        org_url    = org_info.get("url", "")
-
+        
         desc_html  = attrs.get("descriptionHtml", "")
         desc_url   = extract_url_from_description(desc_html)
-        
-        source_url = desc_url or org_url or f"https://www.google.com/search?q={org_info.get('name', '').replace(' ', '+')}"
+        org_url    = org_info.get("url", "")
+        source_url = org_url or desc_url or f"https://www.google.com/search?q={org_info.get('name', '').replace(' ', '+')}"
 
         if source_url in excluded_urls:
             print(f"  Skipping previously approved: {source_url}")
