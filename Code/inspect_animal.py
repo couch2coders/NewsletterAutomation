@@ -28,7 +28,10 @@ print(f"Status: {response.status_code}")
 data = response.json()
 
 # Print animal attributes
-animal = data.get("data", {})
+animal = data.get("data", [])
+if isinstance(animal, list):
+    animal = animal[0] if animal else {}
+
 print("\n--- Animal Attributes ---")
 for key, value in animal.get("attributes", {}).items():
     print(f"{key}: {value}")
