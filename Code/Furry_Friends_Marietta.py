@@ -85,14 +85,12 @@ def extract_url_from_description(description: str) -> str:
 def fetch_rescuegroups(species: str, excluded_urls: set, target: int = 5) -> list[dict]:
     print(f"\n--- Fetching {species}s from RescueGroups API ---")
 
-    # Use views in URL: available + cats or dogs
-    url = f"https://api.rescuegroups.org/v5/public/animals/search/available/{species.lower()}s/"
+    url = f"https://api.rescuegroups.org/v5/public/animals/search/available/{species.lower()}s/?include[]=pictures&include[]=orgs"
 
     headers = {
-    "Authorization": RESCUEGROUPS_API_KEY,
-    "Content-Type": "application/vnd.api+json"
+        "Authorization": RESCUEGROUPS_API_KEY,
+        "Content-Type": "application/vnd.api+json"
     }
-
 
     payload = {
         "data": {
@@ -102,22 +100,23 @@ def fetch_rescuegroups(species: str, excluded_urls: set, target: int = 5) -> lis
             }
         },
         "fields": {
-            "orgs": ["name", "street", "city", "state", "postalcode", "phone", "email", "url", "adoptionUrl", "adoptionProcess"]
+            "orgs": ["name", "street", "city", "state", "postalcode", "phone", "email", "url", "adoptionProcess"]
         }
     }
-    params = {}
 
-    try:
-        response = requests.post(url, headers=headers, json=payload, params=params, timeout=30)
-        print(f"Status: {response.status_code}")
-        print(f"Response: {response.text[:500]}")
-        response.raise_for_status()
-        data = response.json()
-    except requests.exceptions.HTTPError as e:
-        print(f"HTTP Error: {e}")
-        return []
-    except Exception as e:
-        print(f"RescueGroups API error: {e}")
+    for attempt in range(3):
+        try:
+            response = requests.post(url, headers=headers, json=payload, timeout=60)
+            if response.status_code != 200:
+                print(f"Status: {response.status_code} | {response.text[:200]}")
+                return []
+            data = response.json()
+            break
+        except requests.exceptions.ReadTimeout:
+            print(f"  Timeout on attempt {attempt + 1}, retrying...")
+            time.sleep(5)
+    else:
+        print(f"  Failed after 3 attempts")
         return []
 
     animals  = data.get("data", [])
