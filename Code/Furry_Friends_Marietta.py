@@ -359,19 +359,28 @@ def flag_default_winners(cat_results: list[dict], dog_results: list[dict]) -> tu
     cat_results.sort(key=lambda x: x["total_score"], reverse=True)
     dog_results.sort(key=lambda x: x["total_score"], reverse=True)
 
-    for r in cat_results + dog_results:
+    # Initialize all flags to empty
+    for r in cat_results:
         r["cat_default"]    = ""
         r["dog_default"]    = ""
         r["default_winner"] = ""
 
+    for r in dog_results:
+        r["cat_default"]    = ""
+        r["dog_default"]    = ""
+        r["default_winner"] = ""
+
+    # Flag top cat
     if cat_results:
         cat_results[0]["cat_default"] = "yes"
         print(f"Cat default: {cat_results[0]['pet_name']} ({cat_results[0]['total_score']}/30)")
 
+    # Flag top dog
     if dog_results:
         dog_results[0]["dog_default"] = "yes"
         print(f"Dog default: {dog_results[0]['pet_name']} ({dog_results[0]['total_score']}/30)")
 
+    # Flag overall default winner based on week number
     if odd_week and cat_results:
         cat_results[0]["default_winner"] = "yes"
         print(f"Week {week_number} (odd) — overall default: {cat_results[0]['pet_name']} (cat)")
