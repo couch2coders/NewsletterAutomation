@@ -126,26 +126,26 @@ def fetch_rescuegroups(species: str, excluded_urls: set, target: int = 5) -> lis
     # Build org lookup from included data
     org_lookup = {}
     photo_lookup = {}
+    
     for item in included:
         if item.get("type") == "orgs":
-            org_id = item["id"]
-            attrs  = item.get("attributes", {})
+            org_id     = item["id"]
+            item_attrs = item.get("attributes", {})
             org_lookup[org_id] = {
-                "name":             attrs.get("name", ""),
-                "address":          f"{attrs.get('street', '')} {attrs.get('city', '')} {attrs.get('state', '')} {attrs.get('postalcode', '')}".strip(),
-                "phone":            attrs.get("phone", ""),
-                "email":            attrs.get("email", ""),
-                "hours":            attrs.get("hours", ""),
-                "url":              attrs.get("url", ""),
-                "adoptionProcess":  attrs.get("adoptionProcess", "")
+                "name":            item_attrs.get("name", ""),
+                "address":         f"{item_attrs.get('street', '')} {item_attrs.get('city', '')} {item_attrs.get('state', '')} {item_attrs.get('postalcode', '')}".strip(),
+                "phone":           item_attrs.get("phone", ""),
+                "email":           item_attrs.get("email", ""),
+                "hours":           item_attrs.get("hours", ""),
+                "url":             item_attrs.get("url", ""),
+                "adoptionProcess": item_attrs.get("adoptionProcess", "")
             }
         if item.get("type") == "pictures":
-            pic_id   = item["id"]
-            pic_attrs = item.get("attributes", {})
-            # Try both formats -- string and nested object
-            pic_url = pic_attrs.get("large") if isinstance(pic_attrs.get("large"), str) else pic_attrs.get("large", {}).get("url", "")
+            pic_id     = item["id"]
+            item_attrs = item.get("attributes", {})
+            pic_url    = item_attrs.get("large") if isinstance(item_attrs.get("large"), str) else item_attrs.get("large", {}).get("url", "")
             if not pic_url:
-                pic_url = pic_attrs.get("original", "") or pic_attrs.get("small", "")
+                pic_url = item_attrs.get("original", "") or item_attrs.get("small", "")
             if pic_url:
                 photo_lookup[pic_id] = pic_url
 
