@@ -178,6 +178,9 @@ def fetch_rescuegroups(species: str, excluded_urls: set, target: int = 5) -> lis
             
         photo_ids = [p.get("id") for p in relations.get("pictures", {}).get("data", [])]
         photos    = [photo_lookup[pid] for pid in photo_ids if pid in photo_lookup][:3]
+        print(f"  Photo lookup size: {len(photo_lookup)}")
+        print(f"  First animal photo_ids: {photo_ids[:3]}")
+        print(f"  First animal photos: {photos[:1]}")
     
         profile = f"""
     Name: {attrs.get('name', 'Unknown')}
