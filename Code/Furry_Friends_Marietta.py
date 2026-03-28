@@ -185,6 +185,8 @@ def fetch_rescuegroups(species: str, excluded_urls: set, target: int = 5) -> lis
         print(f"  Photo lookup size: {len(photo_lookup)}")
         print(f"  First animal photo_ids: {photo_ids[:3]}")
         print(f"  First animal photos: {photos[:1]}")
+        print(f"  Photo lookup size: {len(photo_lookup)}")
+        print(f"  Org lookup size: {len(org_lookup)}")
     
         profile = f"""
     Name: {attrs.get('name', 'Unknown')}
@@ -280,8 +282,13 @@ Exact format:
     raw = next(block.text for block in response.content if block.type == "text")
     clean = raw.strip().removeprefix("```json").removesuffix("```").strip()
     results = json.loads(clean)
+
+    print(f"  Claude returned URLs: {[r.get('source_url') for r in results]}")
+    print(f"  Original pet URLs: {[p['url'] for p in pets]}")
+    
     # Map photo_url back from original scraped data
     photo_map = {p["url"]: p["photos"][0] if p["photos"] else "" for p in pets}
+    
     for result in results:
         result["photo_url"] = photo_map.get(result["source_url"], "")
     
