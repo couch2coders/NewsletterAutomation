@@ -10,8 +10,6 @@ const APP_PASSWORD    = "Adm1n$$";
 const GITHUB_TOKEN    = import.meta.env.VITE_GITHUB_TOKEN;
 
 // ── STYLES ────────────────────────────────────────────────────────────────────
-const [newsletters, setNewsletters]         = useState([]);
-const [selectedNewsletter, setNewsletter]   = useState("");
 const styles = `
   @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap');
 
@@ -119,6 +117,52 @@ const styles = `
   }
   .btn-approve:hover { background: #5F8563; transform: translateY(-1px); }
   .btn-approve:disabled { background: #A8C4AA; cursor: not-allowed; transform: none; }
+
+  .newsletter-select {
+    padding: 10px 20px;
+    border-radius: 8px;
+    border: 1.5px solid var(--sand);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    background: white;
+    color: var(--bark);
+    cursor: pointer;
+    outline: none;
+  }
+  .newsletter-select:focus { border-color: var(--rust); }
+
+  .default-winners {
+    background: white;
+    border-radius: 16px;
+    padding: 24px 28px;
+    margin-bottom: 32px;
+    box-shadow: 0 4px 24px var(--shadow);
+  }
+  .default-winners-label {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--rust);
+    margin-bottom: 16px;
+  }
+  .default-winners-rows { display: flex; flex-direction: column; gap: 10px; }
+  .default-winner-row { display: flex; align-items: center; gap: 12px; }
+  .winner-badge {
+    color: white;
+    border-radius: 99px;
+    padding: 2px 10px;
+    font-size: 11px;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  .winner-badge-overall { background: var(--rust); }
+  .winner-badge-cat     { background: var(--sage); }
+  .winner-badge-dog     { background: var(--sage); }
+  .winner-name  { font-size: 15px; font-weight: 500; }
+  .winner-score { font-size: 13px; color: #6B5744; }
+
+  .divider { border: none; border-top: 1px solid var(--sand); margin-bottom: 32px; }
 
   .tiles {
     display: grid;
@@ -308,10 +352,25 @@ const styles = `
 
 // ── HELPERS ───────────────────────────────────────────────────────────────────
 function parseCSV(text) {
-  const cleaned = text.replace(/\r/g, "");  // add this line
+  const cleaned = text.replace(/\r/g, "");
   const rows = [];
   let cur = "", inQ = false;
-  for (let i = 0; i < cleaned.length; i++) {  // use cleaned instead of text
+  for (let i = 0; i < cleaned.length; i++) {
+    const c = cleaned[i];
+    if (c === '"') { inQ = !inQ; }
+    else if (c === ',' && !inQ) { cur += '\x00'; }
+    else if (c === '\n' && !inQ) { rows.push(cur.split('\x00').map(f => f.replace(/"/g, "").trim())); cur = ""; }
+    else { cur += c; }
+  }
+  if (cur) rows.push(cur.split('\x00').map(f => f.replace(/"/g, "").trim()));
+  if (rows.length < 2) return [];
+  const headers = rows[0];
+  return rows.slice(1).map(vals => {
+    const obj = {};
+    headers.forEach((h, i) => { obj[h] = vals[i] || ""; });
+    return obj;
+  });
+}
 
 function parseBullets(notes) {
   if (!notes) return [];
@@ -321,19 +380,100 @@ function parseBullets(notes) {
     .filter(Boolean);
 }
 
+function isOddWeek() {
+  const now = new Date();
+  const startOfYear = new Date(now.getFullYear(), 0, 1);
+  const weekNum = Math.ceil(((now - startOfYear) / 86400000 + startOfYear.getDay() + 1) / 7);
+  return weekNum % 2 !== 0;
+}
+
+// ── PET TILE ──────────────────────────────────────────────────────────────────
+function PetTile({ pet, onApprove, approving, approved }) {
+  const localStatus = pet._localStatus;
+  const bullets     = parseBullets(pet.scoring_notes);
+  const total       = pet.total_score ? parseInt(pet.total_score) : null;
+
+  return (
+    <div className={`tile ${localStatus === "approved" ? "approved" : localStatus === "rejected" ? "rejected" : ""}`}>
+      {localStatus === "approved" && <div className="tile-badge">✓ Approved</div>}
+
+      <div className="tile-photo">
+        {pet.photo_url
+          ? <img src={pet.photo_url} alt={pet.pet_name} />
+          : <span>No photo available</span>
+        }
+      </div>
+
+      <div className="tile-body">
+        <div className="tile-meta">
+          <span className="tile-shelter">{pet.shelter_name}</span>
+        </div>
+
+        <div className="tile-name">{pet.pet_name}</div>
+
+        {total !== null && (
+          <div className="score-bar">
+            <div className="score-total">{total}<span>/30</span></div>
+            <div className="score-pills">
+              {pet.adoptability_score && <span className="score-pill">🏠 Adoptability {pet.adoptability_score}</span>}
+              {pet.story_score        && <span className="score-pill">📖 Story {pet.story_score}</span>}
+              {pet.shelter_time_score && <span className="score-pill">⏱ Wait {pet.shelter_time_score}</span>}
+            </div>
+          </div>
+        )}
+
+        {bullets.length > 0 && (
+          <div className="scoring-notes">
+            <div className="scoring-notes-label">Why feature this pet</div>
+            <ul>
+              {bullets.map((b, i) => <li key={i}>{b}</li>)}
+            </ul>
+          </div>
+        )}
+
+        <div className="tile-blurb">{pet.blurb}</div>
+
+        <div className="tile-shelter-info">
+          {pet.shelter_address && <div>{pet.shelter_address}</div>}
+          {pet.shelter_phone   && <div>{pet.shelter_phone}{pet.shelter_email ? ` | ${pet.shelter_email}` : ""}</div>}
+          {pet.shelter_hours   && <div>{pet.shelter_hours}</div>}
+          {pet.source_url      && (
+            <a className="tile-link" href={pet.source_url} target="_blank" rel="noreferrer">
+              View listing →
+            </a>
+          )}
+        </div>
+
+        {!approved && (
+          <button
+            className="btn btn-approve"
+            onClick={() => onApprove(pet)}
+            disabled={approving === pet.source_url}
+          >
+            {approving === pet.source_url ? "Approving..." : "Approve this pet"}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── MAIN APP ──────────────────────────────────────────────────────────────────
 export default function PetReviewApp() {
-  const [token, setToken]           = useState(() => localStorage.getItem("gh_token") || "");
-  const [tokenInput, setTokenInput] = useState("");
-  const [pets, setPets]             = useState([]);
-  const [loading, setLoading]       = useState(false);
-  const [approving, setApproving]   = useState(null);
-  const [approved, setApproved]     = useState(null);
-  const [error, setError]           = useState("");
-  const [success, setSuccess]       = useState("");
+  const [token, setToken]                   = useState(() => localStorage.getItem("gh_token") || "");
+  const [tokenInput, setTokenInput]         = useState("");
+  const [pets, setPets]                     = useState([]);
+  const [newsletters, setNewsletters]       = useState([]);
+  const [selectedNewsletter, setNewsletter] = useState("");
+  const [loading, setLoading]               = useState(false);
+  const [approving, setApproving]           = useState(null);
+  const [approved, setApproved]             = useState(null);
+  const [error, setError]                   = useState("");
+  const [success, setSuccess]               = useState("");
 
   const isAuthed  = Boolean(token);
   const SHEET_CSV = `https://docs.google.com/spreadsheets/d/${GSHEET_ID}/export?format=csv&sheet=${encodeURIComponent(GSHEET_TAB)}`;
+
   useEffect(() => {
     if (!isAuthed) return;
     fetchPets();
@@ -347,14 +487,12 @@ export default function PetReviewApp() {
       const text = await res.text();
       const rows = parseCSV(text);
       const pending = rows.filter(r => r.status === "pending");
-  
+
       // Extract unique newsletter names
       const names = [...new Set(pending.map(r => r.newsletter_name).filter(Boolean))];
       setNewsletters(names);
-      if (!selectedNewsletter && names.length > 0) {
-        setNewsletter(names[0]);
-      }
-  
+      if (names.length > 0) setNewsletter(prev => prev || names[0]);
+
       setPets(pending);
     } catch (e) {
       setError("Could not load pets from Google Sheets.");
@@ -363,14 +501,6 @@ export default function PetReviewApp() {
     }
   }
 
-
-  function isOddWeek() {
-  const now = new Date();
-  const startOfYear = new Date(now.getFullYear(), 0, 1);
-  const weekNum = Math.ceil(((now - startOfYear) / 86400000 + startOfYear.getDay() + 1) / 7);
-  return weekNum % 2 !== 0;
-  }
-  
   async function handleApprove(pet) {
     if (!token) return;
     setApproving(pet.source_url);
@@ -406,32 +536,43 @@ export default function PetReviewApp() {
   }
 
   function handleTokenSubmit() {
-  if (tokenInput.trim() === APP_PASSWORD) {
-    localStorage.setItem("gh_token", GITHUB_TOKEN);
-    setToken(GITHUB_TOKEN);
+    if (!tokenInput.trim()) return;
+    if (tokenInput.trim() === APP_PASSWORD) {
+      const ghToken = GITHUB_TOKEN || tokenInput.trim();
+      localStorage.setItem("gh_token", ghToken);
+      setToken(ghToken);
+    } else {
+      localStorage.setItem("gh_token", tokenInput.trim());
+      setToken(tokenInput.trim());
+    }
     setTokenInput("");
-  } else {
-    setError("Incorrect password.");
   }
-}
 
-    // ── RENDER ────────────────────────────────────────────────────────────────
+  // ── RENDER ────────────────────────────────────────────────────────────────
+  const oddWeek    = isOddWeek();
+  const weekType   = oddWeek ? "cat" : "dog";
+  const visiblePets = pets.filter(p => p.newsletter_name === selectedNewsletter);
+  const overallWinner = visiblePets.find(p => p.default_winner === "yes");
+  const catWinner     = visiblePets.find(p => p.cat_default === "yes");
+  const dogWinner     = visiblePets.find(p => p.dog_default === "yes");
+  const candidates    = visiblePets.filter(p => (p.animal_type || "").toLowerCase() === weekType);
+
   return (
     <>
       <style>{styles}</style>
       <div className="app">
         <div className="header">
-          <p className="header-eyebrow">East Cobb Connect</p>
+          <p className="header-eyebrow">Newsletter Pet Review</p>
           <h1>Pick This Week's<br/><em>Featured Friend</em></h1>
           <p className="header-sub">
-            Review the three candidates and approve the one that best fits the newsletter.
+            Review candidates and approve the one that best fits the newsletter.
           </p>
         </div>
 
         {!isAuthed ? (
           <div className="token-gate">
             <h2>Sign In</h2>
-            <p>Enter your GitHub Personal Access Token to load this week's pets and approve a blurb.</p>
+            <p>Enter your password to load this week's pets.</p>
             <input
               className="token-input"
               type="password"
@@ -464,21 +605,12 @@ export default function PetReviewApp() {
             {error && <div className="error-msg" style={{marginBottom: 24}}>{error}</div>}
 
             {/* Newsletter dropdown */}
-            {newsletters.length > 1 && (
+            {newsletters.length > 0 && (
               <div style={{marginBottom: 32, textAlign: "center"}}>
                 <select
+                  className="newsletter-select"
                   value={selectedNewsletter}
                   onChange={e => setNewsletter(e.target.value)}
-                  style={{
-                    padding: "10px 20px",
-                    borderRadius: 8,
-                    border: "1.5px solid var(--sand)",
-                    fontFamily: "'DM Sans', sans-serif",
-                    fontSize: 15,
-                    background: "white",
-                    color: "var(--bark)",
-                    cursor: "pointer"
-                  }}
                 >
                   {newsletters.map(n => (
                     <option key={n} value={n}>{n.replace(/_/g, " ")}</option>
@@ -487,152 +619,57 @@ export default function PetReviewApp() {
               </div>
             )}
 
-            {/* Default Winners + Candidates */}
-            {(() => {
-              const visiblePets   = pets.filter(p => p.newsletter_name === selectedNewsletter);
-              const overallWinner = visiblePets.find(p => p.default_winner === "yes");
-              const catWinner     = visiblePets.find(p => p.cat_default === "yes");
-              const dogWinner     = visiblePets.find(p => p.dog_default === "yes");
-              const oddWeek       = isOddWeek();
-              const weekType      = oddWeek ? "cat" : "dog";
-              const candidates    = visiblePets.filter(p => p.animal_type === weekType);
+            {/* Default Winners */}
+            <div className="default-winners">
+              <div className="default-winners-label">
+                Default Winners — {oddWeek ? "Odd Week (Cat Week)" : "Even Week (Dog Week)"}
+              </div>
+              <div className="default-winners-rows">
+                <div className="default-winner-row">
+                  <span className="winner-badge winner-badge-overall">Overall</span>
+                  <span className="winner-name">
+                    {overallWinner ? `${overallWinner.pet_name} (${overallWinner.animal_type})` : "None set"}
+                  </span>
+                  {overallWinner && <span className="winner-score">{overallWinner.total_score}/30</span>}
+                </div>
+                <div className="default-winner-row">
+                  <span className="winner-badge winner-badge-cat">Cat</span>
+                  <span className="winner-name">{catWinner ? catWinner.pet_name : "None set"}</span>
+                  {catWinner && <span className="winner-score">{catWinner.total_score}/30</span>}
+                </div>
+                <div className="default-winner-row">
+                  <span className="winner-badge winner-badge-dog">Dog</span>
+                  <span className="winner-name">{dogWinner ? dogWinner.pet_name : "None set"}</span>
+                  {dogWinner && <span className="winner-score">{dogWinner.total_score}/30</span>}
+                </div>
+              </div>
+            </div>
 
-              return (
-                <>
-                  {/* Default Winners Box */}
-                  <div style={{
-                    background: "white",
-                    borderRadius: 16,
-                    padding: "24px 28px",
-                    marginBottom: 32,
-                    boxShadow: "0 4px 24px var(--shadow)"
-                  }}>
-                    <div style={{
-                      fontFamily: "'DM Sans', sans-serif",
-                      fontWeight: 500,
-                      fontSize: 11,
-                      letterSpacing: "0.2em",
-                      textTransform: "uppercase",
-                      color: "var(--rust)",
-                      marginBottom: 16
-                    }}>
-                      Default Winners — {oddWeek ? "Odd Week • Cat Week" : "Even Week • Dog Week"}
-                    </div>
+            <hr className="divider" />
 
-                    <div style={{display: "flex", flexDirection: "column", gap: 10}}>
-                      <div style={{display: "flex", alignItems: "center", gap: 12}}>
-                        <span style={{background: "var(--rust)", color: "white", borderRadius: 99, padding: "2px 10px", fontSize: 11, fontWeight: 500}}>Overall</span>
-                        <span style={{fontSize: 15, fontWeight: 500}}>
-                          {overallWinner ? `${overallWinner.pet_name} (${overallWinner.animal_type})` : "None set"}
-                        </span>
-                        {overallWinner && <span style={{fontSize: 13, color: "#6B5744"}}>{overallWinner.total_score}/30</span>}
-                      </div>
+            {/* Candidates */}
+            <div className="status-bar">
+              <strong>{candidates.length}</strong> {weekType} candidates this week &mdash; select one to feature
+            </div>
 
-                      <div style={{display: "flex", alignItems: "center", gap: 12}}>
-                        <span style={{background: "#7A9E7E", color: "white", borderRadius: 99, padding: "2px 10px", fontSize: 11, fontWeight: 500}}>Cat</span>
-                        <span style={{fontSize: 15, fontWeight: 500}}>
-                          {catWinner ? catWinner.pet_name : "None set"}
-                        </span>
-                        {catWinner && <span style={{fontSize: 13, color: "#6B5744"}}>{catWinner.total_score}/30</span>}
-                      </div>
-
-                      <div style={{display: "flex", alignItems: "center", gap: 12}}>
-                        <span style={{background: "#7A9E7E", color: "white", borderRadius: 99, padding: "2px 10px", fontSize: 11, fontWeight: 500}}>Dog</span>
-                        <span style={{fontSize: 15, fontWeight: 500}}>
-                          {dogWinner ? dogWinner.pet_name : "None set"}
-                        </span>
-                        {dogWinner && <span style={{fontSize: 13, color: "#6B5744"}}>{dogWinner.total_score}/30</span>}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Separator */}
-                  <hr style={{border: "none", borderTop: "1px solid var(--sand)", marginBottom: 32}} />
-
-                  {/* Candidates */}
-                  <div className="status-bar">
-                    <strong>{candidates.length}</strong> {weekType} candidates this week &mdash; select one to feature
-                  </div>
-
-                  <div className="tiles">
-                    {candidates.map((pet, idx) => {
-                      const localStatus = pet._localStatus;
-                      const bullets     = parseBullets(pet.scoring_notes);
-                      const total       = pet.total_score ? parseInt(pet.total_score) : null;
-
-                      return (
-                        <div
-                          key={pet.source_url || idx}
-                          className={`tile ${localStatus === "approved" ? "approved" : localStatus === "rejected" ? "rejected" : ""}`}
-                        >
-                          {localStatus === "approved" && (
-                            <div className="tile-badge">✓ Approved</div>
-                          )}
-
-                          <div className="tile-photo">
-                            {pet.photo_url
-                              ? <img src={pet.photo_url} alt={pet.pet_name} />
-                              : <span>No photo available</span>
-                            }
-                          </div>
-
-                          <div className="tile-body">
-                            <div className="tile-meta">
-                              <span className="tile-shelter">{pet.shelter_name}</span>
-                            </div>
-
-                            <div className="tile-name">{pet.pet_name}</div>
-
-                            {total !== null && (
-                              <div className="score-bar">
-                                <div className="score-total">{total}<span>/30</span></div>
-                                <div className="score-pills">
-                                  {pet.adoptability_score && <span className="score-pill">🏠 Adoptability {pet.adoptability_score}</span>}
-                                  {pet.story_score        && <span className="score-pill">📖 Story {pet.story_score}</span>}
-                                  {pet.shelter_time_score && <span className="score-pill">⏱ Wait {pet.shelter_time_score}</span>}
-                                </div>
-                              </div>
-                            )}
-
-                            {bullets.length > 0 && (
-                              <div className="scoring-notes">
-                                <div className="scoring-notes-label">Why feature this pet</div>
-                                <ul>
-                                  {bullets.map((b, i) => <li key={i}>{b}</li>)}
-                                </ul>
-                              </div>
-                            )}
-
-                            <div className="tile-blurb">{pet.blurb}</div>
-
-                            <div className="tile-shelter-info">
-                              {pet.shelter_address && <div>{pet.shelter_address}</div>}
-                              {pet.shelter_phone   && <div>{pet.shelter_phone}{pet.shelter_email ? ` | ${pet.shelter_email}` : ""}</div>}
-                              {pet.shelter_hours   && <div>{pet.shelter_hours}</div>}
-                              {pet.source_url      && (
-                                <a className="tile-link" href={pet.source_url} target="_blank" rel="noreferrer">
-                                  View listing →
-                                </a>
-                              )}
-                            </div>
-
-                            {!approved && (
-                              <button
-                                className="btn btn-approve"
-                                onClick={() => handleApprove(pet)}
-                                disabled={approving === pet.source_url}
-                              >
-                                {approving === pet.source_url ? "Approving..." : "Approve this pet"}
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </>
-              );
-            })()}
+            {candidates.length === 0 ? (
+              <div className="empty">
+                <h2>No {weekType} candidates</h2>
+                <p>Run the pipeline to generate new candidates for this newsletter.</p>
+              </div>
+            ) : (
+              <div className="tiles">
+                {candidates.map((pet, idx) => (
+                  <PetTile
+                    key={pet.source_url || idx}
+                    pet={pet}
+                    onApprove={handleApprove}
+                    approving={approving}
+                    approved={approved}
+                  />
+                ))}
+              </div>
+            )}
           </>
         )}
       </div>
