@@ -372,12 +372,24 @@ Candidates to score:
 # ---------------------------------------------------------------------------
 # 9. FLAG DEFAULT WINNERS
 # ---------------------------------------------------------------------------
+
+
+#-----------getting week number for even/odd weeks-------------
+def get_week_number():
+    now = datetime.today()
+    start_of_year = datetime(now.year, 1, 1)
+    day_of_year = (now - start_of_year).days
+    week_num = (day_of_year + start_of_year.weekday() + 1) // 7 + 1
+    return week_num
+
+#-----------selecign default winners-------------
 def flag_default_winners(cat_results: list[dict], dog_results: list[dict]) -> tuple[list[dict], list[dict]]:
     print(f"Cat results: {[r['pet_name'] for r in cat_results]}")
     print(f"Dog results: {[r['pet_name'] for r in dog_results]}")
     
-    week_number = datetime.today().isocalendar()[1]
+    week_number = get_week_number()
     odd_week    = week_number % 2 != 0
+    print(f"Week number: {week_number} | Odd: {odd_week}")
 
     cat_results.sort(key=lambda x: x["total_score"], reverse=True)
     dog_results.sort(key=lambda x: x["total_score"], reverse=True)
