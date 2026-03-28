@@ -24,12 +24,12 @@ NEWSLETTERS = [
     {
         "name":   "East_Cobb_Connect",
         "zip":    "30062",
-        "radius": 25
+        "radius": 10
     },
     {
         "name":   "Perimeter_Post",
-        "zip":    "30328",
-        "radius": 25
+        "zip":    "30346",
+        "radius": 10
     }
 ]
 
