@@ -160,21 +160,21 @@ def fetch_rescuegroups(species: str, excluded_urls: set, target: int = 5) -> lis
     
         attrs     = animal.get("attributes", {})
         relations = animal.get("relationships", {})
-        animal_id  = animal.get("id", "")
-        org_url    = org_info.get("url", "")
-        source_url = f"https://rescuegroups.org/animals/detail/{animal_id}/"
-    
+        animal_id = animal.get("id", "")
+        
         description = attrs.get("descriptionText") or attrs.get("descriptionHtml", "")
         if not description or len(description.strip()) < 50:
             continue
+        
         org_id   = relations.get("orgs", {}).get("data", [{}])[0].get("id", "") if relations.get("orgs", {}).get("data") else ""
         org_info = org_lookup.get(org_id, {})
         
         desc_html  = attrs.get("descriptionHtml", "")
         desc_url   = extract_url_from_description(desc_html)
         org_url    = org_info.get("url", "")
-        source_url = org_url or f"https://www.google.com/search?q={org_info.get('name', '').replace(' ', '+')}+adopt+{attrs.get('name', '').replace(' ', '+')}"
-
+        source_url = f"https://rescuegroups.org/animals/detail/{animal_id}/"
+        listing_url = org_url or desc_url or f"https://www.google.com/search?q={org_info.get('name', '').replace(' ', '+')}+adopt+{attrs.get('name', '').replace(' ', '+')}"
+        
         if source_url in excluded_urls:
             print(f"  Skipping previously approved: {source_url}")
             continue
