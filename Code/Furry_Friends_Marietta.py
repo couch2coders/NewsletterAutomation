@@ -121,6 +121,9 @@ def fetch_rescuegroups(species: str, excluded_urls: set, target: int = 5) -> lis
 
     animals  = data.get("data", [])
     included = data.get("included", [])
+    print(f"  Included types: {[item.get('type') for item in included[:10]]}")
+    print(f"  Org count in included: {sum(1 for i in included if i.get('type') == 'orgs')}")
+    print(f"  Photo count in included: {sum(1 for i in included if i.get('type') == 'pictures')}")
     
     # Build org lookup from included data
     org_lookup = {}
