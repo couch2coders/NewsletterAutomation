@@ -373,6 +373,9 @@ Candidates to score:
 # 9. FLAG DEFAULT WINNERS
 # ---------------------------------------------------------------------------
 def flag_default_winners(cat_results: list[dict], dog_results: list[dict]) -> tuple[list[dict], list[dict]]:
+    print(f"Cat results: {[r['pet_name'] for r in cat_results]}")
+    print(f"Dog results: {[r['pet_name'] for r in dog_results]}")
+    
     week_number = datetime.today().isocalendar()[1]
     odd_week    = week_number % 2 != 0
 
