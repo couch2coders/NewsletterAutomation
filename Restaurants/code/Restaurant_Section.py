@@ -247,21 +247,20 @@ def fetch_restaurants(lat: float, lng: float, excluded_place_ids: set, newslette
         # Get cuisine type
         cuisine = place.get("primaryTypeDisplayName", {}).get("text", "Restaurant")
 
-        # Get photo URL -- resolve to direct CDN URL
+        # Get photo URL -- resolve to direct CDN URL using skipHttpRedirect
         photos    = place.get("photos", [])
         photo_url = ""
         if photos:
             photo_ref = photos[0].get("name", "")
             if photo_ref:
-                # Fetch the photo URL to get the redirect CDN URL
-                photo_api_url = f"https://places.googleapis.com/v1/{photo_ref}/media?maxHeightPx=800&key={GOOGLE_PLACES_API_KEY}&skipHttpRedirect=true"
                 try:
+                    photo_api_url = f"https://places.googleapis.com/v1/{photo_ref}/media?maxHeightPx=800&skipHttpRedirect=true&key={GOOGLE_PLACES_API_KEY}"
                     photo_res = requests.get(photo_api_url, timeout=10)
                     if photo_res.status_code == 200:
-                        photo_data = photo_res.json()
-                        photo_url = photo_data.get("photoUri", "")
-                except:
-                    pass
+                        photo_url = photo_res.json().get("photoUri", "")
+                        print(f"    Photo URL resolved: {photo_url[:60]}...")
+                except Exception as e:
+                    print(f"    Photo fetch error: {e}")
 
         # Get hours
         hours_data = place.get("regularOpeningHours", {})
