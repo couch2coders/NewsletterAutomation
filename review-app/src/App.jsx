@@ -337,7 +337,7 @@ function PetsPage({ token }) {
   const [error, setError]                   = useState("");
   const [success, setSuccess]               = useState("");
 
-  const SHEET_CSV = `https://docs.google.com/spreadsheets/d/${GSHEET_ID}/export?format=csv&sheet=${encodeURIComponent(GSHEET_TAB_PETS)}`;
+  const SHEET_CSV = `https://docs.google.com/spreadsheets/d/${GSHEET_ID}/export?format=csv&gid=1504779117`;
 
   useEffect(() => { fetchPets(); }, []);
 
