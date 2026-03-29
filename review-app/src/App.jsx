@@ -559,18 +559,24 @@ export default function App() {
 
   const isAuthed = Boolean(token);
 
+  const [step, setStep] = useState("password"); // "password" or "token"
+  
   function handleTokenSubmit() {
-    if (!tokenInput.trim()) return;
-    if (tokenInput.trim() === APP_PASSWORD) {
-      const ghToken = GITHUB_TOKEN || tokenInput.trim();
-      localStorage.setItem("gh_token", ghToken);
-      setToken(ghToken);
+    if (step === "password") {
+      if (tokenInput.trim() === APP_PASSWORD) {
+        setStep("token");
+        setTokenInput("");
+        setError("");
+      } else {
+        setError("Incorrect password.");
+      }
     } else {
+      if (!tokenInput.trim()) return;
       localStorage.setItem("gh_token", tokenInput.trim());
       setToken(tokenInput.trim());
+      setTokenInput("");
+      setError("");
     }
-    setTokenInput("");
-    setError("");
   }
 
   const pages = [
@@ -598,11 +604,11 @@ export default function App() {
             </div>
             <div className="token-gate">
               <h2>Sign In</h2>
-              <p>Enter your password to get started.</p>
+              <p>{step === "password" ? "Enter your password to get started." : "Enter your GitHub token to enable approvals."}</p>
               <input
                 className="token-input"
                 type="password"
-                placeholder="Enter password"
+                placeholder={step === "password" ? "Enter password" : "ghp_xxxxxxxxxxxx"}
                 value={tokenInput}
                 onChange={e => setTokenInput(e.target.value)}
                 onKeyDown={e => e.key === "Enter" && handleTokenSubmit()}
