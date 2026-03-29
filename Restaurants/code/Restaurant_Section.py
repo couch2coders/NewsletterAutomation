@@ -433,9 +433,9 @@ def score_restaurants(results: list[dict]) -> list[dict]:
     score_map = {s["place_id"]: s for s in scores}
     for result in results:
         s = score_map.get(result["place_id"], {})
-        result["appeal_score"]           = s.get("appeal_score", 0)
-        result["uniqueness_score"]       = s.get("uniqueness_score", 0)
-        result["neighborhood_fit_score"] = s.get("neighborhood_fit_score", 0)
+        result["appeal_score"]           = s.get("appeal_score") or s.get("appeal", 0)
+        result["uniqueness_score"]       = s.get("uniqueness_score") or s.get("uniqueness", 0)
+        result["neighborhood_fit_score"] = s.get("neighborhood_fit_score") or s.get("neighborhood_fit", 0)
         result["scoring_notes"]          = s.get("scoring_notes", "")
         result["total_score"]            = (
             result["appeal_score"] +
