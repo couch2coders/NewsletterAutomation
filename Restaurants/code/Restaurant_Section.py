@@ -29,7 +29,7 @@ GSHEET_ID               = os.environ["GSHEET_ID"]
 GSHEET_TAB              = "Restaurants"
 SKILL_PROMPT_PATH       = Path(__file__).parent.parent / "skills" / "newsletter-restaurant-blurb-skill.md"
 SEARCH_RADIUS_METERS    = 8047  # 5 miles in meters
-MAX_CANDIDATES          = 20    # fetch before filtering
+MAX_CANDIDATES          = 30    # fetch before filtering
 TARGET_TOP_5            = 5
 MAX_SAME_CUISINE        = 2
 LOOKBACK_WEEKS          = 8
@@ -47,17 +47,17 @@ KNOWN_CHAINS = {
     "wendy's", "taco bell", "chipotle", "panera bread", "olive garden",
     "applebee's", "chili's", "ihop", "denny's", "waffle house",
     "cracker barrel", "buffalo wild wings", "red lobster", "outback steakhouse",
-    "texas roadhouse", "longhorn steakhouse", "cheesecake factory", "pf chang's",
-    "domino's", "pizza hut", "papa john's", "little caesars", "five guys",
+    "texas roadhouse", "longhorn steakhouse", "cheesecake factory", "the cheesecake factory",
+    "pf chang's", "domino's", "pizza hut", "papa john's", "little caesars", "five guys",
     "shake shack", "in-n-out", "sonic", "dairy queen", "dunkin",
     "popeyes", "raising cane's", "wingstop", "zaxby's", "hardee's",
     "arby's", "jersey mike's", "jimmy john's", "firehouse subs",
     "moe's southwest grill", "qdoba", "panda express", "jason's deli",
     "noodles & company", "first watch", "eggs up grill", "metro diner",
     "dave & buster's", "dave & busters", "golden corral", "twin peaks",
-    "bahama breeze", "olive garden", "cheesecake factory", "the cheesecake factory",
-    "fogo de chão", "fogo de chao", "main event", "puttshack", "inspire brands",
-    "pappadeaux", "pappasito's", "pappasitos"
+    "bahama breeze", "fogo de chão", "fogo de chao", "main event",
+    "puttshack", "inspire brands", "pappadeaux", "pappadeaux seafood kitchen",
+    "pappasito's", "pappasito's cantina", "pappasitos"
 }
 
 # ---------------------------------------------------------------------------
@@ -170,6 +170,7 @@ def get_featured_place_ids(newsletter_name: str) -> set[str]:
 # ---------------------------------------------------------------------------
 # 7. FETCH RESTAURANTS FROM GOOGLE PLACES API
 # ---------------------------------------------------------------------------
+
 def fetch_restaurants(lat: float, lng: float, excluded_place_ids: set, newsletter_name: str) -> list[dict]:
     print(f"\n--- Fetching restaurants near {lat},{lng} ---")
 
@@ -180,33 +181,42 @@ def fetch_restaurants(lat: float, lng: float, excluded_place_ids: set, newslette
         "X-Goog-FieldMask": "places.id,places.displayName,places.formattedAddress,places.nationalPhoneNumber,places.websiteUri,places.googleMapsUri,places.regularOpeningHours,places.rating,places.userRatingCount,places.priceLevel,places.photos,places.primaryTypeDisplayName,places.editorialSummary,places.reviews"
     }
 
-    payload = {
-        "includedTypes":    ["restaurant"],
-        "maxResultCount":   MAX_CANDIDATES,
-        "locationRestriction": {
-            "circle": {
-                "center": {"latitude": lat, "longitude": lng},
-                "radius": SEARCH_RADIUS_METERS
-            }
-        },
-        "rankPreference": "POPULARITY"
-    }
+    all_places = []
+    for rank_pref in ["POPULARITY", "DISTANCE"]:
+        payload = {
+            "includedTypes":    ["restaurant"],
+            "maxResultCount":   MAX_CANDIDATES,
+            "locationRestriction": {
+                "circle": {
+                    "center": {"latitude": lat, "longitude": lng},
+                    "radius": SEARCH_RADIUS_METERS
+                }
+            },
+            "rankPreference": rank_pref
+        }
+        try:
+            response = requests.post(url, headers=headers, json=payload, timeout=30)
+            if response.status_code == 200:
+                places = response.json().get("places", [])
+                all_places.extend(places)
+                print(f"  {len(places)} results by {rank_pref}")
+            time.sleep(1)
+        except Exception as e:
+            print(f"  Places API error ({rank_pref}): {e}")
 
-    try:
-        response = requests.post(url, headers=headers, json=payload, timeout=30)
-        if response.status_code != 200:
-            print(f"Places API error {response.status_code}: {response.text[:300]}")
-            return []
-        data = response.json()
-    except Exception as e:
-        print(f"Places API error: {e}")
-        return []
+    # Deduplicate by place ID
+    seen = set()
+    unique_places = []
+    for place in all_places:
+        pid = place.get("id", "")
+        if pid not in seen:
+            seen.add(pid)
+            unique_places.append(place)
 
-    places = data.get("places", [])
-    print(f"Found {len(places)} restaurants from Places API")
-
+    print(f"Found {len(unique_places)} unique restaurants from Places API")
+    # ... rest of function stays the same, just replace `places` with `unique_places`
     restaurants = []
-    for place in places:
+    for place in unique_places:
         place_id = place.get("id", "")
         name     = place.get("displayName", {}).get("text", "")
     
