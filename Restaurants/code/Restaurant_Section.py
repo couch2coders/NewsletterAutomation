@@ -185,7 +185,7 @@ def fetch_restaurants(lat: float, lng: float, excluded_place_ids: set, newslette
     for rank_pref in ["POPULARITY", "DISTANCE"]:
         payload = {
             "includedTypes":    ["restaurant"],
-            "maxResultCount":   MAX_CANDIDATES,
+            "maxResultCount":   20,
             "locationRestriction": {
                 "circle": {
                     "center": {"latitude": lat, "longitude": lng},
