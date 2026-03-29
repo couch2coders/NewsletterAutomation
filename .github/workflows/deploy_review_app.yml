@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - 'review-app/**'
+  workflow_dispatch:
 
 jobs:
   deploy:
@@ -23,12 +24,15 @@ jobs:
       - name: Install dependencies
         run: |
           cd review-app
-          npm install
+          npm ci
 
       - name: Build
         run: |
           cd review-app
+          rm -rf dist
           npm run build
+        env:
+          VITE_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
