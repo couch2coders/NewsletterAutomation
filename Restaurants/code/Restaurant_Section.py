@@ -385,8 +385,11 @@ Restaurants:
 
     # Map photo_url back from original data
     photo_map = {r["place_id"]: r["photo_url"] for r in restaurants}
+    print(f"  Photo map entries: {len(photo_map)}")
+    print(f"  Sample photo_map: {list(photo_map.items())[:1]}")
     for result in results:
         result["photo_url"] = photo_map.get(result["place_id"], "")
+        print(f"  {result['restaurant_name']} photo_url: {result['photo_url'][:60] if result['photo_url'] else 'EMPTY'}")
 
     print(f"Generated {len(results)} restaurant blurbs")
     return results
