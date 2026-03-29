@@ -426,6 +426,7 @@ def score_restaurants(results: list[dict]) -> list[dict]:
     clean  = raw.strip().removeprefix("```json").removesuffix("```").strip()
     scores = json.loads(clean)
 
+    print(f"  Raw scores sample: {scores[0] if scores else 'EMPTY'}")
     print(f"  Score results: {[s.get('place_id') for s in scores]}")
     print(f"  Blurb place_ids: {[r.get('place_id') for r in results]}")
 
