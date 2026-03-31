@@ -24,8 +24,9 @@ jobs:
         
       - name: Run approval script
         env:
-          GOOGLE_CREDENTIALS_JSON:  ${{ secrets.GDRIVE_CREDENTIALS }}
-          GSHEET_ID:                ${{ secrets.GSHEET_ID }}
+          NOTION_API_KEY:           ${{ secrets.NOTION_API_KEY }}
+          NOTION_PETS_DB_ID:        ${{ secrets.NOTION_PETS_DB_ID }}
+          NOTION_RESTAURANTS_DB_ID: ${{ secrets.NOTION_RESTAURANTS_DB_ID }}
           APPROVED_URL:             ${{ inputs.source_url }}
           BEEHIIV_API_KEY:          ${{ secrets.BEEHIIV_API_KEY }}
           BEEHIIV_PUBLICATION_ID:   ${{ secrets.BEEHIIV_PUBLICATION_ID }}
