@@ -321,9 +321,9 @@ function PetsPage({ token }) {
     setLoading(true);
     setError("");
     try {
-      const res     = await fetch(DATA_URL);
-      const pets    = await res.json();
-      const pending = pets.filter(r => r.status === "pending");
+      const res     = await fetch("/NewsletterAutomation/pets.json");
+      const rows    = await res.json();
+      const pending = rows.filter(r => r.status === "pending");
       const names   = [...new Set(pending.map(r => r.newsletter_name).filter(Boolean))];
       setNewsletters(names);
       if (names.length > 0) setNewsletter(prev => prev || names[0]);
@@ -466,9 +466,9 @@ function RestaurantsPage({ token }) {
     setLoading(true);
     setError("");
     try {
-      const res         = await fetch(DATA_URL);
-      const restaurants = await res.json();
-      const pending     = restaurants.filter(r => r.status === "pending");
+      const res     = await fetch("/NewsletterAutomation/restaurants.json");
+      const rows    = await res.json();
+      const pending = rows.filter(r => r.status === "pending");
       const names       = [...new Set(pending.map(r => r.newsletter_name).filter(Boolean))];
       setNewsletters(names);
       if (names.length > 0) setNewsletter(prev => prev || names[0]);
