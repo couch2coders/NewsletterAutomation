@@ -58,9 +58,11 @@ def create_page(db_id: str, properties: dict) -> dict:
         json={"parent": {"database_id": db_id}, "properties": properties},
         timeout=30
     )
+    if not r.ok:
+        print(f"  Notion error: {r.text[:500]}")
     r.raise_for_status()
     return r.json()
-
+    
 def setup_notion_databases():
     """Create all required properties in both Notion databases."""
     
