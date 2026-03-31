@@ -66,10 +66,14 @@ def create_page(db_id: str, properties: dict) -> dict:
 # ---------------------------------------------------------------------------
 def get_approved_pet_urls() -> set:
     """Get source URLs of approved pets (for exclusion from candidates)."""
-    pages = query_database(NOTION_PETS_DB_ID, filters={
-        "property": "Status",
-        "select":   {"equals": "approved"}
-    })
+    try:
+        pages = query_database(NOTION_PETS_DB_ID, filters={
+            "property": "Status",
+            "status":   {"equals": "approved"}
+        })
+    except Exception:
+        # If no approved pages exist yet, return empty set
+        return set()
     urls = set()
     for page in pages:
         url = page["properties"].get("Source URL", {}).get("url", "")
@@ -77,7 +81,7 @@ def get_approved_pet_urls() -> set:
             urls.add(url)
     print(f"Loaded {len(urls)} previously approved pet URLs to exclude")
     return urls
-
+    
 def save_pets_to_notion(results: list, newsletter_name: str) -> None:
     print(f"Saving {len(results)} pets to Notion...")
     for data in results:
@@ -128,22 +132,25 @@ def approve_pet_in_notion(source_url: str) -> None:
 # RESTAURANTS HELPERS
 # ---------------------------------------------------------------------------
 def get_featured_place_ids(newsletter_name: str) -> set:
-    """Get place IDs of restaurants featured in last 8 weeks."""
     cutoff = (datetime.today() - timedelta(weeks=8)).strftime("%Y-%m-%d")
-    pages  = query_database(NOTION_RESTAURANTS_DB_ID, filters={
-        "and": [
-            {"property": "Status",     "select":   {"equals": "approved"}},
-            {"property": "Newsletter", "select":   {"equals": newsletter_name}},
-            {"property": "Date Generated", "date": {"on_or_after": cutoff}}
-        ]
-    })
+    try:
+        pages = query_database(NOTION_RESTAURANTS_DB_ID, filters={
+            "and": [
+                {"property": "Status",     "status":   {"equals": "approved"}},
+                {"property": "Newsletter", "select":   {"equals": newsletter_name}},
+                {"property": "Date Generated", "date": {"on_or_after": cutoff}}
+            ]
+        })
+    except Exception:
+        return set()
     place_ids = set()
     for page in pages:
         pid = page["properties"].get("Place ID", {}).get("rich_text", [{}])
         if pid:
             place_ids.add(pid[0].get("text", {}).get("content", ""))
-    print(f"Loaded {len(place_ids)} featured restaurants to exclude (last 8 weeks)")
+    print(f"Loaded {len(place_ids)} featured restaurants to exclude")
     return place_ids
+    
 
 def save_restaurants_to_notion(results: list, newsletter_name: str) -> None:
     print(f"Saving {len(results)} restaurants to Notion...")
