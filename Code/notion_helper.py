@@ -190,16 +190,25 @@ def get_approved_pet_urls() -> set:
     
 def save_pets_to_notion(results: list, newsletter_name: str) -> None:
     print(f"Saving {len(results)} pets to Notion...")
+    existing_urls = get_existing_pet_urls(newsletter_name)
+    print(f"  Found {len(existing_urls)} existing entries to skip")
+
+    saved = 0
     for data in results:
+        source_url = data.get("listing_url") or data.get("source_url", "")
+        if source_url and source_url in existing_urls:
+            print(f"  ✗ Skipping duplicate: {data.get('pet_name')}")
+            continue
+
         properties = {
             "Name": {"title": [{"text": {"content": f"{newsletter_name.replace('_', ' ')} - {data.get('pet_name', '')}"}}]},
             "Source URL":         {"url": data.get("listing_url") or data.get("source_url", "") or None},
-            "Shelter":            {"rich_text": [{"text": {"content": data.get("shelter_name", "")}}]},
-            "Blurb":              {"rich_text": [{"text": {"content": data.get("blurb", "")[:2000]}}]},
-            "Shelter Address":    {"rich_text": [{"text": {"content": data.get("shelter_address", "")}}]},
-            "Shelter Phone":      {"rich_text": [{"text": {"content": data.get("shelter_phone", "")}}]},
-            "Shelter Email":      {"rich_text": [{"text": {"content": data.get("shelter_email", "")}}]},
-            "Shelter Hours":      {"rich_text": [{"text": {"content": data.get("shelter_hours", "")}}]},
+            "Shelter":            {"rich_text": [{"text": {"content": safe_str(data.get("shelter_name"))}}]},
+            "Blurb":              {"rich_text": [{"text": {"content": safe_str(data.get("blurb"))[:2000]}}]},
+            "Shelter Address":    {"rich_text": [{"text": {"content": safe_str(data.get("shelter_address"))}}]},
+            "Shelter Phone":      {"rich_text": [{"text": {"content": safe_str(data.get("shelter_phone"))}}]},
+            "Shelter Email":      {"rich_text": [{"text": {"content": safe_str(data.get("shelter_email"))}}]},
+            "Shelter Hours":      {"rich_text": [{"text": {"content": safe_str(data.get("shelter_hours"))}}]},
             "Photo URL":          {"url": data.get("photo_url") or None},
             "Date Generated":     {"date": {"start": datetime.today().strftime("%Y-%m-%d")}},
             "Status":             {"select": {"name": "pending"}},
@@ -209,7 +218,7 @@ def save_pets_to_notion(results: list, newsletter_name: str) -> None:
             "Adoptability Score": {"number": int(data.get("adoptability_score", 0) or 0)},
             "Story Score":        {"number": int(data.get("story_score", 0) or 0)},
             "Shelter Time Score": {"number": int(data.get("shelter_time_score", 0) or 0)},
-            "Scoring Notes":      {"rich_text": [{"text": {"content": data.get("scoring_notes", "")}}]},
+            "Scoring Notes":      {"rich_text": [{"text": {"content": safe_str(data.get("scoring_notes"))}}]},
             "Default Winner":     {"checkbox": data.get("default_winner", "") == "yes"},
             "Cat Default":        {"checkbox": data.get("cat_default", "") == "yes"},
             "Dog Default":        {"checkbox": data.get("dog_default", "") == "yes"},
@@ -217,7 +226,8 @@ def save_pets_to_notion(results: list, newsletter_name: str) -> None:
         }
         create_page(NOTION_PETS_DB_ID, properties)
         print(f"  ✓ {data.get('pet_name')}")
-    print(f"Saved {len(results)} pets to Notion")
+        saved += 1
+    print(f"Saved {saved} new pets to Notion")
 
 def approve_pet_in_notion(source_url: str) -> None:
     """Set approved pet to approved, all others in same newsletter run to rejected."""
@@ -234,6 +244,23 @@ def approve_pet_in_notion(source_url: str) -> None:
         name = page["properties"].get("Name", {}).get("title", [{}])[0].get("text", {}).get("content", "")
         print(f"{new_status}: {name}")
 
+def get_existing_pet_urls(newsletter_name: str) -> set:
+    """Get source URLs of all non-rejected pets to avoid duplicates."""
+    try:
+        pages = query_database(NOTION_PETS_DB_ID, filters={
+            "and": [
+                {"property": "Newsletter", "select": {"equals": newsletter_name}},
+                {"property": "Status",     "select": {"does_not_equal": "rejected"}}
+            ]
+        })
+        urls = set()
+        for page in pages:
+            url = page["properties"].get("Source URL", {}).get("url", "")
+            if url:
+                urls.add(url)
+        return urls
+    except Exception:
+        return set()
 # ---------------------------------------------------------------------------
 # RESTAURANTS HELPERS
 # ---------------------------------------------------------------------------
