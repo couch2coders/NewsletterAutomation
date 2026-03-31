@@ -104,11 +104,7 @@ def get_festive_score(cuisine_type: str, boosts: list[dict]) -> tuple[int, str]:
 # ---------------------------------------------------------------------------
 # 4. GOOGLE AUTH
 # ---------------------------------------------------------------------------
-creds = Credentials.from_service_account_info(
-    json.loads(os.environ["GOOGLE_CREDENTIALS_JSON"]),
-    scopes=["https://www.googleapis.com/auth/spreadsheets"]
-)
-sheets_service = build("sheets", "v4", credentials=creds)
+
 
 # ---------------------------------------------------------------------------
 # 5. LOAD SKILL PROMPT
@@ -486,43 +482,7 @@ def flag_default_winner(results: list[dict]) -> list[dict]:
 # ---------------------------------------------------------------------------
 # 12. SAVE TO GOOGLE SHEETS
 # ---------------------------------------------------------------------------
-def save_to_sheets(results: list[dict], newsletter_name: str) -> None:
-    rows = []
-    for data in results:
-        rows.append([
-            data.get("place_id", ""),
-            data.get("restaurant_name", ""),
-            data.get("cuisine_type", ""),
-            data.get("blurb", ""),
-            data.get("address", ""),
-            data.get("phone", ""),
-            data.get("hours", ""),
-            data.get("website_url", ""),
-            data.get("google_maps_url", ""),
-            data.get("photo_url", ""),
-            data.get("rating", ""),
-            data.get("review_count", ""),
-            data.get("price_level", ""),
-            datetime.today().strftime("%Y-%m-%d"),
-            "pending",
-            "restaurant_blurb",
-            newsletter_name,
-            data.get("total_score", ""),
-            data.get("appeal_score", ""),
-            data.get("uniqueness_score", ""),
-            data.get("neighborhood_fit_score", ""),
-            data.get("festive_score", ""),
-            data.get("scoring_notes", ""),
-            data.get("default_winner", "")
-        ])
-
-    sheets_service.spreadsheets().values().append(
-        spreadsheetId=GSHEET_ID,
-        range=f"{GSHEET_TAB}!A:X",
-        valueInputOption="RAW",
-        body={"values": rows}
-    ).execute()
-    print(f"Saved {len(rows)} restaurants to Google Sheets")
+save_restaurants_to_notion(results, newsletter["name"])
 
 # ---------------------------------------------------------------------------
 # 13. MAIN
