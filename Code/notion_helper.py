@@ -245,21 +245,23 @@ def approve_pet_in_notion(source_url: str) -> None:
         print(f"{new_status}: {name}")
 
 def get_existing_pet_urls(newsletter_name: str) -> set:
-    """Get source URLs of all non-rejected pets to avoid duplicates."""
+    """Get source URLs of all pending and approved pets to avoid duplicates."""
     try:
         pages = query_database(NOTION_PETS_DB_ID, filters={
-            "and": [
-                {"property": "Newsletter", "select": {"equals": newsletter_name}},
-                {"property": "Status",     "select": {"does_not_equal": "rejected"}}
-            ]
+            "property": "Newsletter",
+            "select":   {"equals": newsletter_name}
         })
         urls = set()
         for page in pages:
+            status = page["properties"].get("Status", {}).get("select", {})
+            if status and status.get("name") == "rejected":
+                continue
             url = page["properties"].get("Source URL", {}).get("url", "")
             if url:
                 urls.add(url)
         return urls
-    except Exception:
+    except Exception as e:
+        print(f"  Warning: could not load existing URLs: {e}")
         return set()
 # ---------------------------------------------------------------------------
 # RESTAURANTS HELPERS
