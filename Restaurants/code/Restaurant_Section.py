@@ -23,7 +23,6 @@ import anthropic
 # ---------------------------------------------------------------------------
 CLAUDE_API_KEY          = os.environ["CLAUDE_API_KEY"]
 GOOGLE_PLACES_API_KEY   = os.environ["GOOGLE_PLACES_API_KEY"]
-GOOGLE_CREDENTIALS_JSON = os.environ["GOOGLE_CREDENTIALS_JSON"]
 SKILL_PROMPT_PATH       = Path(__file__).parent.parent / "skills" / "newsletter-restaurant-blurb-skill.md"
 SEARCH_RADIUS_METERS    = 8047  # 5 miles in meters
 MAX_CANDIDATES          = 30    # fetch before filtering
