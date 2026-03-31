@@ -62,6 +62,12 @@ def create_page(db_id: str, properties: dict) -> dict:
         print(f"  Notion error: {r.text[:500]}")
     r.raise_for_status()
     return r.json()
+
+def safe_str(value) -> str:
+    """Convert any value to a safe non-null string."""
+    if value is None:
+        return ""
+    return str(value).strip()
     
 def setup_notion_databases():
     """Create all required properties in both Notion databases."""
@@ -72,11 +78,11 @@ def setup_notion_databases():
         "Name":               {"title": {}},
         "Source URL":         {"url": {}},
         "Shelter":            {"rich_text": {}},
-        "Blurb":              {"rich_text": {}},
-        "Shelter Phone": {"rich_text": [{"text": {"content": str(data.get("shelter_phone") or "")}}]},
-        "Shelter Email": {"rich_text": [{"text": {"content": str(data.get("shelter_email") or "")}}]},
-        "Shelter Hours": {"rich_text": [{"text": {"content": str(data.get("shelter_hours") or "")}}]},
-        "Shelter Address": {"rich_text": [{"text": {"content": str(data.get("shelter_address") or "")}}]},
+        "Blurb":              {"rich_text": [{"text": {"content": safe_str(data.get("blurb"))[:2000]}}]},
+        "Shelter Address":    {"rich_text": [{"text": {"content": safe_str(data.get("shelter_address"))}}]},
+        "Shelter Phone":      {"rich_text": [{"text": {"content": safe_str(data.get("shelter_phone"))}}]},
+        "Shelter Email":      {"rich_text": [{"text": {"content": safe_str(data.get("shelter_email"))}}]},
+        "Shelter Hours":      {"rich_text": [{"text": {"content": safe_str(data.get("shelter_hours"))}}]},
         "Photo URL":          {"url": {}},
         "Date Generated":     {"date": {}},
         "Status":             {"select": {"options": [
@@ -93,7 +99,7 @@ def setup_notion_databases():
         "Adoptability Score": {"number": {"format": "number"}},
         "Story Score":        {"number": {"format": "number"}},
         "Shelter Time Score": {"number": {"format": "number"}},
-        "Scoring Notes":      {"rich_text": {}},
+        "Scoring Notes":      {"rich_text": [{"text": {"content": safe_str(data.get("scoring_notes"))}}]},
         "Default Winner":     {"checkbox": {}},
         "Cat Default":        {"checkbox": {}},
         "Dog Default":        {"checkbox": {}},
@@ -106,12 +112,12 @@ def setup_notion_databases():
     # Restaurants database properties
     restaurants_properties = {
         "Name":                   {"title": {}},
-        "Place ID":               {"rich_text": {}},
+        "Place ID":               {"rich_text": [{"text": {"content": safe_str(data.get("place_id"))}}]},
         "Cuisine":                {"select": {}},
-        "Blurb":                  {"rich_text": {}},
-        "Address":                {"rich_text": {}},
-        "Phone":                  {"rich_text": {}},
-        "Hours":                  {"rich_text": {}},
+        "Blurb":                  {"rich_text": [{"text": {"content": safe_str(data.get("blurb"))[:2000]}}]},
+        "Address":                {"rich_text": [{"text": {"content": safe_str(data.get("address"))}}]},
+        "Phone":                  {"rich_text": [{"text": {"content": safe_str(data.get("phone"))}}]},
+        "Hours":                  {"rich_text": [{"text": {"content": safe_str(data.get("hours"))[:2000]}}]},
         "Website":                {"url": {}},
         "Google Maps URL":        {"url": {}},
         "Photo URL":              {"url": {}},
@@ -134,7 +140,7 @@ def setup_notion_databases():
         "Uniqueness Score":       {"number": {"format": "number"}},
         "Neighborhood Fit Score": {"number": {"format": "number"}},
         "Festive Score":          {"number": {"format": "number"}},
-        "Scoring Notes":          {"rich_text": {}},
+        "Scoring Notes":          {"rich_text": [{"text": {"content": safe_str(data.get("scoring_notes"))}}]},
         "Default Winner":         {"checkbox": {}},
     }
 
