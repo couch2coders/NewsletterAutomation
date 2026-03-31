@@ -5,8 +5,11 @@ Uses Google Places API to find local restaurants near each newsletter zip,
 generates blurbs via Claude, scores them with festive awareness,
 and writes results to Google Sheets Restaurants tab.
 """
-
+import sys
 import os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', 'Code'))
+
+from notion_helper import get_featured_place_ids, save_restaurants_to_notion
 import json
 import math
 import time
