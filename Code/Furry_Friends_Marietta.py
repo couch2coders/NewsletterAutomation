@@ -41,7 +41,6 @@ NEWSLETTERS = [
 # ---------------------------------------------------------------------------
 CLAUDE_API_KEY          = os.environ["CLAUDE_API_KEY"]
 RESCUEGROUPS_API_KEY    = os.environ["RESCUE_GROUP_API_KEY"]
-GOOGLE_CREDENTIALS_JSON = os.environ["GOOGLE_CREDENTIALS_JSON"]
 SKILL_PROMPT_PATH       = Path(__file__).parent.parent / "Skills" / "newsletter-pet-adoption-skill_auto.md"
 
 
