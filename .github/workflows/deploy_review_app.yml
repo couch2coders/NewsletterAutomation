@@ -25,6 +25,9 @@ jobs:
         run: |
           cd review-app
           npm ci
+      
+      - name: Install dependencies
+        run: pip install anthropic requests notion-client
 
       - name: Build
         run: |
