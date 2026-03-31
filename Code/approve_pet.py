@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-import os, sys
+import os
+import sys
 sys.path.append(os.path.dirname(__file__))
 from notion_helper import approve_pet_in_notion
 
