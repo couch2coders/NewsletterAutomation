@@ -13,11 +13,10 @@ import time
 from datetime import datetime, timedelta
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+from notion_helper import get_featured_place_ids, save_restaurants_to_notion
 
 import requests
 import anthropic
-from google.oauth2.service_account import Credentials
-from googleapiclient.discovery import build
 
 # ---------------------------------------------------------------------------
 # 1. ENVIRONMENT
@@ -25,8 +24,6 @@ from googleapiclient.discovery import build
 CLAUDE_API_KEY          = os.environ["CLAUDE_API_KEY"]
 GOOGLE_PLACES_API_KEY   = os.environ["GOOGLE_PLACES_API_KEY"]
 GOOGLE_CREDENTIALS_JSON = os.environ["GOOGLE_CREDENTIALS_JSON"]
-GSHEET_ID               = os.environ["GSHEET_ID"]
-GSHEET_TAB              = "Restaurants"
 SKILL_PROMPT_PATH       = Path(__file__).parent.parent / "skills" / "newsletter-restaurant-blurb-skill.md"
 SEARCH_RADIUS_METERS    = 8047  # 5 miles in meters
 MAX_CANDIDATES          = 30    # fetch before filtering
