@@ -26,12 +26,13 @@ jobs:
         run: |
           cd Code
           python export_notion_data.py
-          mv pets.json ../review-app/public/pets.json
-          mv restaurants.json ../review-app/public/restaurants.json
+          cp pets.json ../review-app/public/pets.json
+          cp restaurants.json ../review-app/public/restaurants.json
 
-      - name: Commit JSON files to gh-pages
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./review-app/public
-          keep_files: true
+      - name: Commit JSON files to main
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add review-app/public/pets.json review-app/public/restaurants.json
+          git diff --staged --quiet || git commit -m "Update pets and restaurants JSON data"
+          git push
