@@ -27,10 +27,10 @@ Error generating stack: `+e.message+`
     /* ── Layout ── */
     .app-layout {
       display: grid;
-      grid-template-columns: 1fr 180px;
+      grid-template-columns: 180px 1fr;
       grid-template-areas:
-        "header  sidebar"
-        "content sidebar";
+      "sidebar header"
+      "sidebar content";
       gap: 0 32px;
       align-items: start;
     }
