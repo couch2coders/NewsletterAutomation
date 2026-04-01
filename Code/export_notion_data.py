@@ -42,7 +42,8 @@ def export_pets():
         if status and status.get("name") != "pending":
             continue
         pets.append({
-            "source_url":         extract_text(props.get("Source URL", {})),
+           "source_url":  extract_text(props.get("Source URL", {})),
+            "listing_url": extract_text(props.get("Listing URL", {})),
             "pet_name": extract_text(props.get("Name", {})).split(" - ", 1)[-1],
             "shelter_name":       extract_text(props.get("Shelter", {})),
             "blurb":              extract_text(props.get("Blurb", {})),
