@@ -266,7 +266,7 @@ function RestaurantsPage({ token, onApprove, onUnapprove, approvedSections, onNe
   const [restaurants, setRestaurants]       = useState([]);
   const [newsletters, setNewsletters]       = useState([]);
   const [selectedNewsletter, setNewsletter] = useState("");
-  const [loading, setLoading]               = useState(false);
+  const [loading, setLoading]               = useState(true);
   const [approving, setApproving]           = useState(null);
   const [error, setError]                   = useState("");
   const [success, setSuccess]               = useState("");
@@ -478,7 +478,7 @@ function PetsPage({ token, onApprove, onUnapprove, approvedSections, onNewslette
   const [pets, setPets]                     = useState([]);
   const [newsletters, setNewsletters]       = useState([]);
   const [selectedNewsletter, setNewsletter] = useState("");
-  const [loading, setLoading]               = useState(false);
+  const [loading, setLoading]               = useState(true);
   const [approving, setApproving]           = useState(null);
   const [error, setError]                   = useState("");
   const [success, setSuccess]               = useState("");
