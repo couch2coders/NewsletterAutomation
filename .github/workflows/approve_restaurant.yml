@@ -23,4 +23,4 @@ jobs:
           NOTION_RESTAURANTS_DB_ID: ${{ secrets.NOTION_RESTAURANTS_DB_ID }}
           APPROVED_URL:             ${{ github.event.inputs.source_url }}
           GITHUB_TOKEN:             ${{ secrets.PAT_TOKEN }}
-        run: python Restaurants/Code/approve_restaurant.py
+        run: python Restaurants/code/approve_restaurant.py
