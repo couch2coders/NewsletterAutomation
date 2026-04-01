@@ -449,30 +449,33 @@ function ReviewPage({ config, token, onApprove, onUnapprove, approvedSections, o
     setLoading(true);
     setError("");
     try {
-      const res     = await fetch(`/NewsletterAutomation/${config.dataFile}`);
-      const rows    = await res.json();
-      const pending = rows.filter(r => r.status === "pending");
-      const pendingNames = [...new Set(pending.map(r => r.newsletter_name).filter(Boolean))];
+      const res  = await fetch(`/NewsletterAutomation/${config.dataFile}`);
+      const rows = await res.json();
 
-      const approvedNames = Object.keys(approvedSections)
-        .filter(k => k.startsWith(config.sectionPrefix + ":"))
-        .map(k => k.replace(config.sectionPrefix + ":", ""));
+      // Use ALL items, not just pending — derive local status from the JSON status field
+      const allNames = [...new Set(rows.map(r => r.newsletter_name).filter(Boolean))];
 
-      const allNames = [...new Set([...pendingNames, ...approvedNames])];
-
-      const savedApprovals = JSON.parse(localStorage.getItem(config.storageKey) || "{}");
-      const restoredPending = pending.map(item => {
-        const savedId = savedApprovals[item.newsletter_name];
-        if (savedId && savedId !== "__previously_approved__") {
-          if (item[config.idField] === savedId) return { ...item, _localStatus: "approved" };
-          return { ...item, _localStatus: "rejected" };
-        }
+      const withStatus = rows.map(item => {
+        if (item.status === "approved") return { ...item, _localStatus: "approved" };
+        if (item.status === "rejected") return { ...item, _localStatus: "rejected" };
         return item;
       });
 
+      // Build approvedMap from items that are already approved in the data
+      const dataApprovedMap = {};
+      withStatus.forEach(item => {
+        if (item.status === "approved" && item.newsletter_name) {
+          dataApprovedMap[item.newsletter_name] = item[config.idField];
+        }
+      });
+      if (Object.keys(dataApprovedMap).length > 0) {
+        setApprovedMap(prev => ({ ...prev, ...dataApprovedMap }));
+        Object.keys(dataApprovedMap).forEach(nl => onApprove(nl));
+      }
+
       setNewsletters(allNames);
       if (allNames.length > 0) setNewsletter(prev => prev || allNames[0]);
-      setItems(restoredPending);
+      setItems(withStatus);
       onNewslettersLoaded(allNames);
     } catch (e) {
       setError("Could not load data.");
@@ -525,8 +528,10 @@ function ReviewPage({ config, token, onApprove, onUnapprove, approvedSections, o
         try {
           const r    = await fetch(`/NewsletterAutomation/${config.dataFile}?t=` + Date.now());
           const rows = await r.json();
-          const pending = rows.filter(i => i.status === "pending" && i.newsletter_name === selectedNewsletter);
-          if (pending.length > 0) {
+          const nlItems = rows.filter(i => i.newsletter_name === selectedNewsletter);
+          const hasApproved = nlItems.some(i => i.status === "approved");
+          // Redo is done when no item for this newsletter is approved anymore
+          if (!hasApproved && nlItems.length > 0) {
             clearInterval(pollRef.current);
             pollRef.current = null;
             setApprovedMap(prev => { const next = { ...prev }; delete next[selectedNewsletter]; return next; });
@@ -535,7 +540,13 @@ function ReviewPage({ config, token, onApprove, onUnapprove, approvedSections, o
             delete savedApprovals[selectedNewsletter];
             localStorage.setItem(config.storageKey, JSON.stringify(savedApprovals));
             setRedoing(false);
-            setItems(rows.filter(i => i.status === "pending"));
+            // Reload all items with fresh status
+            const allRows = rows.map(item => {
+              if (item.status === "approved") return { ...item, _localStatus: "approved" };
+              if (item.status === "rejected") return { ...item, _localStatus: "rejected" };
+              return { ...item, _localStatus: undefined };
+            });
+            setItems(allRows);
           }
         } catch {}
       }, 8000);
