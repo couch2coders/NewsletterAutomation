@@ -456,22 +456,21 @@ function ReviewPage({ config, token, onApprove, onUnapprove, approvedSections, o
       const allNames = [...new Set(rows.map(r => r.newsletter_name).filter(Boolean))];
 
       const withStatus = rows.map(item => {
-        if (item.status === "approved") return { ...item, _localStatus: "approved" };
-        if (item.status === "rejected") return { ...item, _localStatus: "rejected" };
+        const s = (item.status || "").toLowerCase();
+        if (s === "approved") return { ...item, _localStatus: "approved" };
+        if (s === "rejected") return { ...item, _localStatus: "rejected" };
         return item;
       });
 
       // Build approvedMap from items that are already approved in the data
       const dataApprovedMap = {};
       withStatus.forEach(item => {
-        if (item.status === "approved" && item.newsletter_name) {
+        if (item._localStatus === "approved" && item.newsletter_name) {
           dataApprovedMap[item.newsletter_name] = item[config.idField];
         }
       });
-      if (Object.keys(dataApprovedMap).length > 0) {
-        setApprovedMap(prev => ({ ...prev, ...dataApprovedMap }));
-        Object.keys(dataApprovedMap).forEach(nl => onApprove(nl));
-      }
+      setApprovedMap(prev => ({ ...prev, ...dataApprovedMap }));
+      Object.keys(dataApprovedMap).forEach(nl => onApprove(nl));
 
       setNewsletters(allNames);
       if (allNames.length > 0) setNewsletter(prev => prev || allNames[0]);
@@ -529,7 +528,7 @@ function ReviewPage({ config, token, onApprove, onUnapprove, approvedSections, o
           const r    = await fetch(`/NewsletterAutomation/${config.dataFile}?t=` + Date.now());
           const rows = await r.json();
           const nlItems = rows.filter(i => i.newsletter_name === selectedNewsletter);
-          const hasApproved = nlItems.some(i => i.status === "approved");
+          const hasApproved = nlItems.some(i => (i.status || "").toLowerCase() === "approved");
           // Redo is done when no item for this newsletter is approved anymore
           if (!hasApproved && nlItems.length > 0) {
             clearInterval(pollRef.current);
@@ -542,8 +541,9 @@ function ReviewPage({ config, token, onApprove, onUnapprove, approvedSections, o
             setRedoing(false);
             // Reload all items with fresh status
             const allRows = rows.map(item => {
-              if (item.status === "approved") return { ...item, _localStatus: "approved" };
-              if (item.status === "rejected") return { ...item, _localStatus: "rejected" };
+              const s = (item.status || "").toLowerCase();
+              if (s === "approved") return { ...item, _localStatus: "approved" };
+              if (s === "rejected") return { ...item, _localStatus: "rejected" };
               return { ...item, _localStatus: undefined };
             });
             setItems(allRows);
@@ -612,9 +612,17 @@ function ReviewPage({ config, token, onApprove, onUnapprove, approvedSections, o
         const winnerId = approvedMap[selectedNewsletter];
         const winner = candidates.find(i => i[config.idField] === winnerId);
         return (
-          <div className="status-bar" style={{background: "#EFF7F0", border: "1px solid #C0DFC4", marginBottom: 24}}>
-            <strong>{"\u2705"} Winner selected{winner ? `: ${winner[config.nameField]}` : ""}!</strong> — approved and sent to Notion
-          </div>
+          <>
+            <div className="status-bar" style={{background: "#EFF7F0", border: "1px solid #C0DFC4", marginBottom: 16}}>
+              <strong>{"\u2705"} Winner selected{winner ? `: ${winner[config.nameField]}` : ""}!</strong> — approved and sent to Notion
+            </div>
+            <div style={{textAlign: "center", marginBottom: 24}}>
+              <button className="btn btn-redo" onClick={handleRedo} disabled={redoing}>
+                {redoing ? "\u23F3 Resetting candidates..." : "\uD83D\uDD04 Redo Selection"}
+              </button>
+              {redoing && <p style={{marginTop: 12, fontSize: 13, color: "#6B5744"}}>Updating Notion and refreshing data, this may take a minute...</p>}
+            </div>
+          </>
         );
       })()}
 
@@ -625,15 +633,6 @@ function ReviewPage({ config, token, onApprove, onUnapprove, approvedSections, o
           {candidates.map((item, idx) => (
             <TileComponent key={item[config.idField] || idx} {...{[config.itemPropName]: item}} onApprove={handleApprove} approving={approving} approved={approvedMap[selectedNewsletter]} />
           ))}
-        </div>
-      )}
-
-      {approvedMap[selectedNewsletter] && (
-        <div style={{textAlign: "center", marginTop: 32, marginBottom: 32}}>
-          <button className="btn btn-redo" onClick={handleRedo} disabled={redoing}>
-            {redoing ? "\u23F3 Resetting candidates..." : "\uD83D\uDD04 Redo Selection"}
-          </button>
-          {redoing && <p style={{marginTop: 12, fontSize: 13, color: "#6B5744"}}>Updating Notion and refreshing data, this may take a minute...</p>}
         </div>
       )}
     </>
