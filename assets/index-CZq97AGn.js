@@ -24,7 +24,7 @@ Error generating stack: `+e.message+`
   body { background: var(--cream); font-family: 'DM Sans', sans-serif; color: var(--bark); min-height: 100vh; }
   .app { max-width: 1200px; margin: 0 auto; padding: 48px 24px; }
 
-  /* ── Nav bar (horizontal on desktop, dropdown on mobile) ── */
+/* ── Nav bar (vertical on desktop, dropdown on mobile) ── */
   .nav-bar {
     background: white;
     border-radius: 12px;
@@ -34,9 +34,10 @@ Error generating stack: `+e.message+`
   }
   .nav-tabs {
     display: flex;
+    flex-direction: column;
   }
   .nav-btn {
-    flex: 1;
+    width: 100%;
     padding: 14px 20px;
     border: none;
     font-family: 'DM Sans', sans-serif;
@@ -46,33 +47,17 @@ Error generating stack: `+e.message+`
     transition: all 0.2s;
     background: transparent;
     color: #6B5744;
-    border-bottom: 3px solid transparent;
+    border-left: 3px solid transparent;
+    border-bottom: none;
+    text-align: left;
   }
   .nav-btn.active {
     background: var(--cream);
     color: var(--rust);
-    border-bottom: 3px solid var(--rust);
+    border-left: 3px solid var(--rust);
+    border-bottom: none;
   }
   .nav-btn:hover:not(.active) { background: var(--sand); }
-
-  /* Collapse to dropdown on small screens */
-  .nav-select-wrap { display: none; padding: 8px; }
-  .nav-select {
-    width: 100%;
-    padding: 10px 16px;
-    border-radius: 8px;
-    border: 1.5px solid var(--sand);
-    font-family: 'DM Sans', sans-serif;
-    font-size: 14px;
-    background: var(--cream);
-    color: var(--bark);
-    cursor: pointer;
-    outline: none;
-  }
-  @media (max-width: 480px) {
-    .nav-tabs { display: none; }
-    .nav-select-wrap { display: block; }
-  }
 
   /* ── Header ── */
   .header { text-align: center; margin-bottom: 40px; }
