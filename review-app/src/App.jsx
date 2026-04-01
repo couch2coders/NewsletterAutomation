@@ -122,6 +122,8 @@ const styles = `
   .btn-approve:disabled { background: #A8C4AA; cursor: not-allowed; transform: none; }
   .btn-maps { background: #4285F4; color: white; width: 100%; justify-content: center; margin-top: 12px; padding: 12px 28px; font-size: 14px; text-decoration: none; border-radius: 8px; display: inline-flex; align-items: center; gap: 8px; font-weight: 500; transition: all 0.2s; }
   .btn-maps:hover { background: #3367D6; transform: translateY(-1px); }
+  .btn-redo { background: var(--sand); color: var(--bark); border: 1.5px solid var(--gold); padding: 12px 32px; font-size: 14px; }
+  .btn-redo:hover { background: var(--gold); color: white; transform: translateY(-1px); }
 
   /* ── Newsletter select ── */
   .newsletter-select { padding: 10px 20px; border-radius: 8px; border: 1.5px solid var(--sand); font-family: 'DM Sans', sans-serif; font-size: 15px; background: white; color: var(--bark); cursor: pointer; outline: none; }
@@ -385,7 +387,28 @@ function PetsPage({ token, onApprove, approvedSections }) {
       setApproving(null);
     }
   }
-
+  
+  async function handleRedo() {
+    if (!token) return;
+    setError("");
+    try {
+      const res = await fetch(
+        `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/actions/workflows/redo_pets.yml/dispatches`,
+        { method: "POST", headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json", "Content-Type": "application/json" },
+          body: JSON.stringify({ ref: "main", inputs: { newsletter_name: selectedNewsletter } }) }
+      );
+      if (!res.ok) { const err = await res.json(); throw new Error(err.message || "GitHub API error"); }
+      setApproved(null);
+      setPets(prev => prev.map(p => ({ ...p, _localStatus: undefined })));
+      // Remove checkmark for this newsletter
+      const key = `pets:${selectedNewsletter}`;
+      const updated = { ...approvedSections };
+      delete updated[key];
+      localStorage.setItem("approved_sections", JSON.stringify(updated));
+    } catch (e) {
+      setError(`Redo failed: ${e.message}`);
+    }
+  }
   const oddWeek       = isOddWeek();
   const weekType      = oddWeek ? "cat" : "dog";
   const visiblePets   = pets.filter(p => p.newsletter_name === selectedNewsletter);
