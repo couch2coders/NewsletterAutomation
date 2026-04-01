@@ -333,10 +333,18 @@ function RestaurantsPage({ token, onApprove, onUnapprove, approvedSections, onNe
   const [selectedNewsletter, setNewsletter] = useState("");
   const [loading, setLoading]               = useState(false);
   const [approving, setApproving]           = useState(null);
-  const [approvedMap, setApprovedMap]       = useState({});
   const [error, setError]                   = useState("");
   const [success, setSuccess]               = useState("");
   const [redoing, setRedoing]               = useState(false);
+  const [approvedMap, setApprovedMap] = useState(() => {
+  const map = {};
+  Object.keys(approvedSections).forEach(key => {
+    if (key.startsWith("restaurants:")) {
+      map[key.replace("restaurants:", "")] = "__previously_approved__";
+    }
+  });
+  return map;
+});
 
   useEffect(() => { fetchRestaurants(); }, []);
 
@@ -531,10 +539,18 @@ function PetsPage({ token, onApprove, onUnapprove, approvedSections, onNewslette
   const [selectedNewsletter, setNewsletter] = useState("");
   const [loading, setLoading]               = useState(false);
   const [approving, setApproving]           = useState(null);
-  const [approvedMap, setApprovedMap]       = useState({});
   const [error, setError]                   = useState("");
   const [success, setSuccess]               = useState("");
   const [redoing, setRedoing]               = useState(false);
+  const [approvedMap, setApprovedMap] = useState(() => {
+  const map = {};
+  Object.keys(approvedSections).forEach(key => {
+    if (key.startsWith("pets:")) {
+      map[key.replace("pets:", "")] = "__previously_approved__";
+    }
+  });
+  return map;
+});
 
   useEffect(() => { fetchPets(); }, []);
 
