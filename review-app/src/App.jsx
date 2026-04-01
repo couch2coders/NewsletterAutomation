@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 // ── CONFIG ────────────────────────────────────────────────────────────────────
 const GITHUB_OWNER         = "couch2coders";
