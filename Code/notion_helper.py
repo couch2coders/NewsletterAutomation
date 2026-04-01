@@ -247,16 +247,16 @@ def approve_pet_in_notion(source_url: str) -> None:
     print(f"Approving for newsletter: {approved_newsletter}")
 
     for page in pages:
-        page_id    = page["id"]
-        props      = page["properties"]
-        status     = props.get("Status", {}).get("select", {})
+        page_id     = page["id"]
+        props       = page["properties"]
+        status      = props.get("Status", {}).get("select", {})
         status_name = status.get("name", "") if status else ""
 
         if status_name != "pending":
             continue
 
-        # Only reject pets from the same newsletter
-        newsletter  = props.get("Newsletter", {}).get("select", {})
+        # Only touch pets from the same newsletter
+        newsletter      = props.get("Newsletter", {}).get("select", {})
         newsletter_name = newsletter.get("name", "") if newsletter else ""
         if newsletter_name != approved_newsletter:
             continue
