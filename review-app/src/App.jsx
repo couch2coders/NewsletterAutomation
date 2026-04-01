@@ -488,7 +488,6 @@ function PetsPage({ token, onApprove, approvedSections }) {
     } catch (e) {
       setError(`Redo failed: ${e.message}`);
     }
-}
   }
   const oddWeek       = isOddWeek();
   const weekType      = oddWeek ? "cat" : "dog";
