@@ -147,7 +147,7 @@ const styles = `
   .tile { background: white; border-radius: 20px; overflow: hidden; box-shadow: 0 4px 24px var(--shadow); transition: transform 0.25s, box-shadow 0.25s; display: flex; flex-direction: column; position: relative; }
   .tile:hover { transform: translateY(-4px); box-shadow: 0 12px 40px var(--shadow); }
   .tile.approved { outline: 3px solid var(--sage); outline-offset: -3px; }
-  .tile.rejected { opacity: 0.4; pointer-events: none; }
+  .tile.rejected { opacity: 0.6; }
   .tile-badge { position: absolute; top: 16px; right: 16px; background: var(--sage); color: white; font-size: 11px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; padding: 4px 12px; border-radius: 99px; z-index: 2; }
   .tile-photo { width: 100%; height: 240px; background: var(--sand); display: flex; align-items: center; justify-content: center; color: #A89080; font-size: 13px; flex-shrink: 0; }
   .tile-photo img { width: 100%; height: 100%; object-fit: cover; }
@@ -553,9 +553,8 @@ function ReviewPage({ config, token, onApprove, onUnapprove, approvedSections, o
   const visibleItems = items.filter(i => i.newsletter_name === selectedNewsletter);
   const { candidates, extra } = config.filterCandidates(visibleItems);
   const winners = config.renderDefaultWinners(visibleItems, extra);
-  const approvedCandidates   = candidates.filter(i => i._localStatus === "approved");
-  const unapprovedCandidates = candidates.filter(i => i._localStatus !== "approved");
   const TileComponent = config.TileComponent;
+  const emptyMsg = config.emptyCandidatesText(extra);
 
   if (loading) return <div className="loading">{config.loadingText}</div>;
   if (items.length === 0 && newsletters.length === 0 && Object.keys(approvedMap).length === 0) return (
@@ -598,46 +597,28 @@ function ReviewPage({ config, token, onApprove, onUnapprove, approvedSections, o
         <strong>{config.statusBarText(candidates.length, extra)}</strong> &mdash; select one to feature
       </div>
 
-      {approvedMap[selectedNewsletter] ? (
-        <>
-          <div className="status-bar" style={{background: "#EFF7F0", border: "1px solid #C0DFC4", marginBottom: 24}}>
-            <strong>{"\u2705"} Winner selected!</strong> — approved and sent to Notion
-          </div>
-          {approvedCandidates.length > 0 ? (
-            <div className="tiles">
-              {approvedCandidates.map((item, idx) => (
-                <TileComponent key={item[config.idField] || idx} {...{[config.itemPropName]: item}} onApprove={handleApprove} approving={approving} approved={approvedMap[selectedNewsletter]} />
-              ))}
-            </div>
-          ) : (
-            <div className="empty" style={{padding: "32px 24px"}}>
-              <p style={{color: "#6B5744", fontSize: 14}}>A winner was selected for this newsletter. Click Redo to change the selection.</p>
-            </div>
-          )}
-          <div style={{textAlign: "center", marginTop: 32, marginBottom: 32}}>
-            <button className="btn btn-redo" onClick={handleRedo} disabled={redoing}>
-              {redoing ? "\u23F3 Resetting candidates..." : "\uD83D\uDD04 Redo Selection"}
-            </button>
-            {redoing && <p style={{marginTop: 12, fontSize: 13, color: "#6B5744"}}>Updating Notion and refreshing data, this may take a minute...</p>}
-          </div>
-          {unapprovedCandidates.length > 0 && (
-            <>
-              <div className="default-winners-label" style={{textAlign: "center", marginBottom: 16}}>Other Candidates</div>
-              <div className="tiles" style={{opacity: redoing ? 0.3 : 0.5, pointerEvents: "none"}}>
-                {unapprovedCandidates.map((item, idx) => (
-                  <TileComponent key={item[config.idField] || idx} {...{[config.itemPropName]: item}} onApprove={handleApprove} approving={approving} approved={approvedMap[selectedNewsletter]} />
-                ))}
-              </div>
-            </>
-          )}
-        </>
-      ) : candidates.length === 0 ? (
-        (() => { const empty = config.emptyCandidatesText(extra); return <div className="empty"><h2>{empty.title}</h2><p>{empty.sub}</p></div>; })()
+      {approvedMap[selectedNewsletter] && (
+        <div className="status-bar" style={{background: "#EFF7F0", border: "1px solid #C0DFC4", marginBottom: 24}}>
+          <strong>{"\u2705"} Winner selected!</strong> — approved and sent to Notion
+        </div>
+      )}
+
+      {candidates.length === 0 ? (
+        <div className="empty"><h2>{emptyMsg.title}</h2><p>{emptyMsg.sub}</p></div>
       ) : (
         <div className="tiles">
           {candidates.map((item, idx) => (
             <TileComponent key={item[config.idField] || idx} {...{[config.itemPropName]: item}} onApprove={handleApprove} approving={approving} approved={approvedMap[selectedNewsletter]} />
           ))}
+        </div>
+      )}
+
+      {approvedMap[selectedNewsletter] && (
+        <div style={{textAlign: "center", marginTop: 32, marginBottom: 32}}>
+          <button className="btn btn-redo" onClick={handleRedo} disabled={redoing}>
+            {redoing ? "\u23F3 Resetting candidates..." : "\uD83D\uDD04 Redo Selection"}
+          </button>
+          {redoing && <p style={{marginTop: 12, fontSize: 13, color: "#6B5744"}}>Updating Notion and refreshing data, this may take a minute...</p>}
         </div>
       )}
     </>
