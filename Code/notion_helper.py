@@ -285,7 +285,26 @@ def get_featured_place_ids(newsletter_name: str) -> set:
             place_ids.add(pid[0].get("text", {}).get("content", ""))
     print(f"Loaded {len(place_ids)} featured restaurants to exclude")
     return place_ids
-    
+
+def get_existing_place_ids(newsletter_name: str) -> set:
+    """Get place IDs of all non-rejected restaurants to avoid duplicates."""
+    try:
+        pages = query_database(NOTION_RESTAURANTS_DB_ID, filters={
+            "property": "Newsletter",
+            "select":   {"equals": newsletter_name}
+        })
+        place_ids = set()
+        for page in pages:
+            status = page["properties"].get("Status", {}).get("select", {})
+            if status and status.get("name") == "rejected":
+                continue
+            pid = page["properties"].get("Place ID", {}).get("rich_text", [])
+            if pid:
+                place_ids.add(pid[0].get("text", {}).get("content", ""))
+        return place_ids
+    except Exception as e:
+        print(f"  Warning: could not load existing place IDs: {e}")
+        return set()
 
 def save_restaurants_to_notion(results: list, newsletter_name: str) -> None:
     print(f"Saving {len(results)} restaurants to Notion...")
