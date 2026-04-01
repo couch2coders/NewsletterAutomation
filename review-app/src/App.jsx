@@ -485,14 +485,10 @@ function PetsPage({ token, onApprove, approvedSections }) {
       if (!res.ok) { const err = await res.json(); throw new Error(err.message || "GitHub API error"); }
       setApproved(null);
       setPets(prev => prev.map(p => ({ ...p, _localStatus: undefined })));
-      // Remove checkmark for this newsletter
-      const key = `pets:${selectedNewsletter}`;
-      const updated = { ...approvedSections };
-      delete updated[key];
-      localStorage.setItem("approved_sections", JSON.stringify(updated));
     } catch (e) {
       setError(`Redo failed: ${e.message}`);
     }
+}
   }
   const oddWeek       = isOddWeek();
   const weekType      = oddWeek ? "cat" : "dog";
