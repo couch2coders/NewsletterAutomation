@@ -384,7 +384,7 @@ function RestaurantsPage({ token, onApprove, approvedSections, onNewslettersLoad
       const res = await fetch(
         `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/actions/workflows/${GITHUB_WORKFLOW_REST}/dispatches`,
         { method: "POST", headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json", "Content-Type": "application/json" },
-          body: JSON.stringify({ ref: "main", inputs: { place_id: restaurant.place_id } }) }
+          body: JSON.stringify({ ref: "main", inputs: { place_id: restaurant.place_id, newsletter_name: selectedNewsletter } }) }
       );
       if (!res.ok) { const err = await res.json(); throw new Error(err.message || "GitHub API error"); }
       setApprovedMap(prev => ({ ...prev, [selectedNewsletter]: restaurant.place_id }));
@@ -579,7 +579,7 @@ function PetsPage({ token, onApprove, approvedSections, onNewslettersLoaded }) {
       const res = await fetch(
         `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/actions/workflows/${GITHUB_WORKFLOW_PETS}/dispatches`,
         { method: "POST", headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json", "Content-Type": "application/json" },
-          body: JSON.stringify({ ref: "main", inputs: { source_url: pet.source_url } }) }
+          body: JSON.stringify({ ref: "main", inputs: { source_url: pet.source_url, newsletter_name: selectedNewsletter } }) }
       );
       if (!res.ok) { const err = await res.json(); throw new Error(err.message || "GitHub API error"); }
       setApprovedMap(prev => ({ ...prev, [selectedNewsletter]: pet.source_url }));
@@ -772,8 +772,11 @@ export default function App() {
     }
   }
 
-  const petsApproved = petNewsletters.length > 0 && petNewsletters.every(n => approvedSections[`pets:${n}`]);
-  const restApproved = restNewsletters.length > 0 && restNewsletters.every(n => approvedSections[`restaurants:${n}`]);
+  // Only show tab checkmark if we have loaded newsletters AND all of them are approved
+  // Require at least the known number of newsletters (2) to avoid false positives
+  const EXPECTED_NEWSLETTERS = 2;
+  const petsApproved = petNewsletters.length >= EXPECTED_NEWSLETTERS && petNewsletters.every(n => approvedSections[`pets:${n}`]);
+  const restApproved = restNewsletters.length >= EXPECTED_NEWSLETTERS && restNewsletters.every(n => approvedSections[`restaurants:${n}`]);
 
   const pages = [
     { id: "pets",        label: `${petsApproved ? "✅ " : ""}🐾 Pets` },
