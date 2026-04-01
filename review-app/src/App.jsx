@@ -303,7 +303,7 @@ function RestaurantTile({ restaurant, onApprove, approving, approved }) {
 }
 
 // ── PETS PAGE ─────────────────────────────────────────────────────────────────
-function PetsPage({ token }) {
+function PetsPage({ token, onApprove, approvedSections }) {
   const [pets, setPets]                     = useState([]);
   const [newsletters, setNewsletters]       = useState([]);
   const [selectedNewsletter, setNewsletter] = useState("");
@@ -312,8 +312,6 @@ function PetsPage({ token }) {
   const [approved, setApproved]             = useState(null);
   const [error, setError]                   = useState("");
   const [success, setSuccess]               = useState("");
-
-  const DATA_URL = "/NewsletterAutomation/pets.json";
 
   useEffect(() => { fetchPets(); }, []);
 
@@ -349,6 +347,7 @@ function PetsPage({ token }) {
       setApproved(pet.source_url);
       setSuccess(`${pet.pet_name} approved!`);
       setPets(prev => prev.map(p => ({ ...p, _localStatus: p.source_url === pet.source_url ? "approved" : "rejected" })));
+      onApprove(selectedNewsletter);
     } catch (e) {
       setError(`Approval failed: ${e.message}`);
     } finally {
@@ -375,59 +374,36 @@ function PetsPage({ token }) {
       {newsletters.length > 0 && (
         <div style={{marginBottom: 32, textAlign: "center"}}>
           <select className="newsletter-select" value={selectedNewsletter} onChange={e => setNewsletter(e.target.value)}>
-            {newsletters.map(n => <option key={n} value={n}>{n.replace(/_/g, " ")}</option>)}
+            {newsletters.map(n => (
+              <option key={n} value={n}>
+                {approvedSections?.[`pets:${n}`] ? `✅ ${n.replace(/_/g, " ")}` : n.replace(/_/g, " ")}
+              </option>
+            ))}
           </select>
         </div>
       )}
 
-      {/* Default Winners */}
-      <div style={{marginBottom: 32}}>
-        <div className="default-winners-label" style={{
-          fontFamily: "'DM Sans', sans-serif",
-          fontWeight: 500,
-          fontSize: 11,
-          letterSpacing: "0.2em",
-          textTransform: "uppercase",
-          color: "var(--rust)",
-          marginBottom: 24
-        }}>
-          Default Winners — {oddWeek ? "Odd Week (Cat Week)" : "Even Week (Dog Week)"}
-        </div>
-      
-        <div className="tiles">
-          {[
-            { label: "Overall", pet: overallWinner },
-            { label: "Cat",     pet: catWinner },
-            { label: "Dog",     pet: dogWinner },
-          ].filter(w => w.pet).map(({ label, pet }) => (
-            <div key={label} style={{position: "relative"}}>
-              <div style={{
-                position: "absolute",
-                top: 16,
-                left: 16,
-                zIndex: 3,
-                background: label === "Overall" ? "var(--rust)" : "var(--sage)",
-                color: "white",
-                borderRadius: 99,
-                padding: "3px 12px",
-                fontSize: 11,
-                fontWeight: 500,
-                letterSpacing: "0.1em",
-                textTransform: "uppercase"
-              }}>
-                {label} Default
-              </div>
-              <PetTile
-                pet={pet}
-                onApprove={handleApprove}
-                approving={approving}
-                approved={approved}
-              />
-            </div>
-          ))}
+      <div className="default-winners">
+        <div className="default-winners-label">Default Winners — {oddWeek ? "Odd Week (Cat Week)" : "Even Week (Dog Week)"}</div>
+        <div className="default-winners-rows">
+          <div className="default-winner-row">
+            <span className="winner-badge winner-badge-overall">Overall</span>
+            <span className="winner-name">{overallWinner ? `${overallWinner.pet_name} (${overallWinner.animal_type})` : "None set"}</span>
+            {overallWinner && <span className="winner-score">{overallWinner.total_score}/30</span>}
+          </div>
+          <div className="default-winner-row">
+            <span className="winner-badge winner-badge-cat">Cat</span>
+            <span className="winner-name">{catWinner ? catWinner.pet_name : "None set"}</span>
+            {catWinner && <span className="winner-score">{catWinner.total_score}/30</span>}
+          </div>
+          <div className="default-winner-row">
+            <span className="winner-badge winner-badge-dog">Dog</span>
+            <span className="winner-name">{dogWinner ? dogWinner.pet_name : "None set"}</span>
+            {dogWinner && <span className="winner-score">{dogWinner.total_score}/30</span>}
+          </div>
         </div>
       </div>
-      
+
       <hr className="divider" />
 
       <div className="status-bar">
@@ -448,7 +424,8 @@ function PetsPage({ token }) {
 }
 
 // ── RESTAURANTS PAGE ──────────────────────────────────────────────────────────
-function RestaurantsPage({ token }) {
+// ── RESTAURANTS PAGE ──────────────────────────────────────────────────────────
+function RestaurantsPage({ token, onApprove, approvedSections }) {
   const [restaurants, setRestaurants]       = useState([]);
   const [newsletters, setNewsletters]       = useState([]);
   const [selectedNewsletter, setNewsletter] = useState("");
@@ -458,17 +435,15 @@ function RestaurantsPage({ token }) {
   const [error, setError]                   = useState("");
   const [success, setSuccess]               = useState("");
 
-  const DATA_URL = "/NewsletterAutomation/restaurants.json";
-  
   useEffect(() => { fetchRestaurants(); }, []);
-  
+
   async function fetchRestaurants() {
     setLoading(true);
     setError("");
     try {
-      const res     = await fetch("/NewsletterAutomation/restaurants.json");
-      const rows    = await res.json();
-      const pending = rows.filter(r => r.status === "pending");
+      const res         = await fetch("/NewsletterAutomation/restaurants.json");
+      const rows        = await res.json();
+      const pending     = rows.filter(r => r.status === "pending");
       const names       = [...new Set(pending.map(r => r.newsletter_name).filter(Boolean))];
       setNewsletters(names);
       if (names.length > 0) setNewsletter(prev => prev || names[0]);
@@ -494,6 +469,7 @@ function RestaurantsPage({ token }) {
       setApproved(restaurant.place_id);
       setSuccess(`${restaurant.restaurant_name} approved!`);
       setRestaurants(prev => prev.map(r => ({ ...r, _localStatus: r.place_id === restaurant.place_id ? "approved" : "rejected" })));
+      onApprove(selectedNewsletter);
     } catch (e) {
       setError(`Approval failed: ${e.message}`);
     } finally {
@@ -515,7 +491,11 @@ function RestaurantsPage({ token }) {
       {newsletters.length > 0 && (
         <div style={{marginBottom: 32, textAlign: "center"}}>
           <select className="newsletter-select" value={selectedNewsletter} onChange={e => setNewsletter(e.target.value)}>
-            {newsletters.map(n => <option key={n} value={n}>{n.replace(/_/g, " ")}</option>)}
+            {newsletters.map(n => (
+              <option key={n} value={n}>
+                {approvedSections?.[`restaurants:${n}`] ? `✅ ${n.replace(/_/g, " ")}` : n.replace(/_/g, " ")}
+              </option>
+            ))}
           </select>
         </div>
       )}
@@ -556,11 +536,21 @@ export default function App() {
   const [tokenInput, setTokenInput] = useState("");
   const [error, setError]           = useState("");
   const [activePage, setActivePage] = useState("pets");
+  const [step, setStep]             = useState("password");
+  const [approvedSections, setApprovedSections] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("approved_sections") || "{}"); }
+    catch { return {}; }
+  });
 
   const isAuthed = Boolean(token);
 
-  const [step, setStep] = useState("password"); // "password" or "token"
-  
+  function markApproved(section, newsletter) {
+    const key     = `${section}:${newsletter}`;
+    const updated = { ...approvedSections, [key]: true };
+    setApprovedSections(updated);
+    localStorage.setItem("approved_sections", JSON.stringify(updated));
+  }
+
   function handleTokenSubmit() {
     if (step === "password") {
       if (tokenInput.trim() === APP_PASSWORD) {
@@ -579,9 +569,12 @@ export default function App() {
     }
   }
 
+  const petsApproved = Object.keys(approvedSections).some(k => k.startsWith("pets:"));
+  const restApproved = Object.keys(approvedSections).some(k => k.startsWith("restaurants:"));
+
   const pages = [
-    { id: "pets",        label: "🐾 Pets" },
-    { id: "restaurants", label: "🍽 Restaurants" },
+    { id: "pets",        label: `${petsApproved ? "✅ " : ""}🐾 Pets` },
+    { id: "restaurants", label: `${restApproved ? "✅ " : ""}🍽 Restaurants` },
   ];
 
   const pageHeaders = {
@@ -619,7 +612,6 @@ export default function App() {
           </>
         ) : (
           <>
-            {/* Responsive nav -- horizontal tabs on desktop, dropdown on mobile */}
             <div className="nav-bar">
               <div className="nav-tabs">
                 {pages.map(p => (
@@ -635,16 +627,14 @@ export default function App() {
               </div>
             </div>
 
-            {/* Page header */}
             <div className="header">
               <p className="header-eyebrow">{currentHeader.eyebrow}</p>
               <h1>{currentHeader.h1}</h1>
               <p className="header-sub">{currentHeader.sub}</p>
             </div>
 
-            {/* Page content */}
-            {activePage === "pets"        && <PetsPage        token={token} />}
-            {activePage === "restaurants" && <RestaurantsPage token={token} />}
+            {activePage === "pets"        && <PetsPage        token={token} onApprove={(n) => markApproved("pets", n)}        approvedSections={approvedSections} />}
+            {activePage === "restaurants" && <RestaurantsPage token={token} onApprove={(n) => markApproved("restaurants", n)} approvedSections={approvedSections} />}
           </>
         )}
       </div>
