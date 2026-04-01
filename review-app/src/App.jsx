@@ -389,7 +389,7 @@ function RestaurantsPage({ token, onApprove, onUnapprove, approvedSections, onNe
   const defaultWinner = visibleRest.find(r => r.default_winner === "yes");
 
   if (loading) return <div className="loading">Loading this week's restaurant candidates...</div>;
-  if (restaurants.length === 0 && newsletters.length === 0) return (
+  if (restaurants.length === 0 && newsletters.length === 0 && Object.keys(approvedMap).length === 0) return (
     <div className="empty"><h2>All clear!</h2><p>No pending restaurants found. Run the pipeline to generate new candidates.</p></div>
   );
 
@@ -605,7 +605,7 @@ function PetsPage({ token, onApprove, onUnapprove, approvedSections, onNewslette
   const candidates    = visiblePets.filter(p => (p.animal_type || "").toLowerCase() === weekType);
 
   if (loading) return <div className="loading">Loading this week's candidates...</div>;
-  if (pets.length === 0) return <div className="empty"><h2>All clear!</h2><p>No pending pets found. Run the pipeline to generate new candidates.</p></div>;
+  if (pets.length === 0 && newsletters.length === 0 && Object.keys(approvedMap).length === 0) return <div className="empty"><h2>All clear!</h2><p>No pending pets found. Run the pipeline to generate new candidates.</p></div>;
 
   return (
       <>
