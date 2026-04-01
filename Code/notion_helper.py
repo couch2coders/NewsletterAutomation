@@ -77,6 +77,7 @@ def setup_notion_databases():
 
         "Name":               {"title": {}},
         "Source URL":         {"url": {}},
+        "Listing URL": {"url": {}},
         "Shelter":            {"rich_text": {}},
         "Blurb":              {"rich_text": [{"text": {"content": safe_str(data.get("blurb"))[:2000]}}]},
         "Shelter Address":    {"rich_text": [{"text": {"content": safe_str(data.get("shelter_address"))}}]},
