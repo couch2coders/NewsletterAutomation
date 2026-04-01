@@ -308,15 +308,24 @@ def get_existing_place_ids(newsletter_name: str) -> set:
 
 def save_restaurants_to_notion(results: list, newsletter_name: str) -> None:
     print(f"Saving {len(results)} restaurants to Notion...")
+    existing_ids = get_existing_place_ids(newsletter_name)
+    print(f"  Found {len(existing_ids)} existing entries to skip")
+
+    saved = 0
     for data in results:
+        place_id = data.get("place_id", "")
+        if place_id and place_id in existing_ids:
+            print(f"  ✗ Skipping duplicate: {data.get('restaurant_name')}")
+            continue
+
         properties = {
             "Name": {"title": [{"text": {"content": f"{newsletter_name.replace('_', ' ')} - {data.get('restaurant_name', '')}"}}]},
-            "Place ID":               {"rich_text": [{"text": {"content": data.get("place_id", "")}}]},
+            "Place ID":               {"rich_text": [{"text": {"content": safe_str(data.get("place_id"))}}]},
             "Cuisine":                {"select": {"name": data.get("cuisine_type", "Restaurant")[:100]}},
-            "Blurb":                  {"rich_text": [{"text": {"content": data.get("blurb", "")[:2000]}}]},
-            "Address":                {"rich_text": [{"text": {"content": data.get("address", "")}}]},
-            "Phone":                  {"rich_text": [{"text": {"content": data.get("phone", "")}}]},
-            "Hours":                  {"rich_text": [{"text": {"content": data.get("hours", "")[:2000]}}]},
+            "Blurb":                  {"rich_text": [{"text": {"content": safe_str(data.get("blurb"))[:2000]}}]},
+            "Address":                {"rich_text": [{"text": {"content": safe_str(data.get("address"))}}]},
+            "Phone":                  {"rich_text": [{"text": {"content": safe_str(data.get("phone"))}}]},
+            "Hours":                  {"rich_text": [{"text": {"content": safe_str(data.get("hours"))[:2000]}}]},
             "Website":                {"url": data.get("website_url") or None},
             "Google Maps URL":        {"url": data.get("google_maps_url") or None},
             "Photo URL":              {"url": data.get("photo_url") or None},
@@ -332,13 +341,14 @@ def save_restaurants_to_notion(results: list, newsletter_name: str) -> None:
             "Uniqueness Score":       {"number": int(data.get("uniqueness_score", 0) or 0)},
             "Neighborhood Fit Score": {"number": int(data.get("neighborhood_fit_score", 0) or 0)},
             "Festive Score":          {"number": int(data.get("festive_score", 0) or 0)},
-            "Scoring Notes":          {"rich_text": [{"text": {"content": data.get("scoring_notes", "")}}]},
+            "Scoring Notes":          {"rich_text": [{"text": {"content": safe_str(data.get("scoring_notes"))}}]},
             "Default Winner":         {"checkbox": data.get("default_winner", "") == "yes"},
         }
         create_page(NOTION_RESTAURANTS_DB_ID, properties)
         print(f"  ✓ {data.get('restaurant_name')}")
-    print(f"Saved {len(results)} restaurants to Notion")
-
+        saved += 1
+    print(f"Saved {saved} new restaurants to Notion")
+    
 def approve_restaurant_in_notion(place_id: str) -> None:
     """Set approved restaurant to approved, all others pending to rejected."""
     pages = query_database(NOTION_RESTAURANTS_DB_ID, filters={
