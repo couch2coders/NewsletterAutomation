@@ -624,60 +624,63 @@ export default function App() {
   const currentHeader = pageHeaders[activePage];
 
   return (
-    <>
-      <style>{styles}</style>
-      <div className="app">
-        {!isAuthed ? (
-          <>
-            <div className="header">
-              <p className="header-eyebrow">Newsletter Review</p>
-              <h1>Pick This Week's<br/><em>Best Content</em></h1>
-              <p className="header-sub">Review and approve pets and restaurants for your newsletters.</p>
-            </div>
-            <div className="token-gate">
-              <h2>Sign In</h2>
-              <p>{step === "password" ? "Enter your password to get started." : "Enter your GitHub token to enable approvals."}</p>
-              <input
-                className="token-input"
-                type="password"
-                placeholder={step === "password" ? "Enter password" : "ghp_xxxxxxxxxxxx"}
-                value={tokenInput}
-                onChange={e => setTokenInput(e.target.value)}
-                onKeyDown={e => e.key === "Enter" && handleTokenSubmit()}
-              />
-              <button className="btn btn-primary" onClick={handleTokenSubmit}>Continue</button>
-              {error && <div className="error-msg">{error}</div>}
-            </div>
-          </>
+      <>
+        <style>{styles}</style>
+        <div className="app">
+          {!isAuthed ? (
+            <>
+              <div className="header">
+                <p className="header-eyebrow">Newsletter Review</p>
+                <h1>Pick This Week's<br/><em>Best Content</em></h1>
+                <p className="header-sub">Review and approve pets and restaurants for your newsletters.</p>
+              </div>
+              <div className="token-gate">
+                <h2>Sign In</h2>
+                <p>{step === "password" ? "Enter your password to get started." : "Enter your GitHub token to enable approvals."}</p>
+                <input
+                  className="token-input"
+                  type="password"
+                  placeholder={step === "password" ? "Enter password" : "ghp_xxxxxxxxxxxx"}
+                  value={tokenInput}
+                  onChange={e => setTokenInput(e.target.value)}
+                  onKeyDown={e => e.key === "Enter" && handleTokenSubmit()}
+                />
+                <button className="btn btn-primary" onClick={handleTokenSubmit}>Continue</button>
+                {error && <div className="error-msg">{error}</div>}
+              </div>
+            </>
           ) : (
-          <div className="app-layout">
-            {/* Sidebar Nav */}
-            <div className="nav-bar">
-              <div className="nav-tabs">
-                {pages.map(p => (
-                  <button key={p.id} className={`nav-btn ${activePage === p.id ? "active" : ""}`} onClick={() => setActivePage(p.id)}>
-                    {p.label}
-                  </button>
-                ))}
+            <div className="app-layout">
+              {/* Sidebar Nav */}
+              <div className="nav-bar">
+                <div className="nav-tabs">
+                  {pages.map(p => (
+                    <button key={p.id} className={`nav-btn ${activePage === p.id ? "active" : ""}`} onClick={() => setActivePage(p.id)}>
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+                <div className="nav-select-wrap">
+                  <select className="nav-select" value={activePage} onChange={e => setActivePage(e.target.value)}>
+                    {pages.map(p => <option key={p.id} value={p.id}>{p.label}</option>)}
+                  </select>
+                </div>
               </div>
-              <div className="nav-select-wrap">
-                <select className="nav-select" value={activePage} onChange={e => setActivePage(e.target.value)}>
-                  {pages.map(p => <option key={p.id} value={p.id}>{p.label}</option>)}
-                </select>
+  
+              {/* Page header */}
+              <div className="header app-header">
+                <p className="header-eyebrow">{currentHeader.eyebrow}</p>
+                <h1>{currentHeader.h1}</h1>
+                <p className="header-sub">{currentHeader.sub}</p>
+              </div>
+  
+              {/* Page content */}
+              <div className="app-content">
+                {activePage === "pets"        && <PetsPage        token={token} onApprove={(n) => markApproved("pets", n)}        approvedSections={approvedSections} />}
+                {activePage === "restaurants" && <RestaurantsPage token={token} onApprove={(n) => markApproved("restaurants", n)} approvedSections={approvedSections} />}
               </div>
             </div>
-
-            {/* Page header */}
-            <div className="header app-header">
-              <p className="header-eyebrow">{currentHeader.eyebrow}</p>
-              <h1>{currentHeader.h1}</h1>
-              <p className="header-sub">{currentHeader.sub}</p>
-            </div>
-
-            {/* Page content */}
-            <div className="app-content">
-              {activePage === "pets"        && <PetsPage        token={token} onApprove={(n) => markApproved("pets", n)}        approvedSections={approvedSections} />}
-              {activePage === "restaurants" && <RestaurantsPage token={token} onApprove={(n) => markApproved("restaurants", n)} approvedSections={approvedSections} />}
-            </div>
-          </div>
-        )}
+          )}
+        </div>
+      </>
+    );
