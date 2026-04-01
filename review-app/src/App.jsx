@@ -608,11 +608,15 @@ function ReviewPage({ config, token, onApprove, onUnapprove, approvedSections, o
         <strong>{config.statusBarText(candidates.length, extra)}</strong> &mdash; select one to feature
       </div>
 
-      {approvedMap[selectedNewsletter] && (
-        <div className="status-bar" style={{background: "#EFF7F0", border: "1px solid #C0DFC4", marginBottom: 24}}>
-          <strong>{"\u2705"} Winner selected!</strong> — approved and sent to Notion
-        </div>
-      )}
+      {approvedMap[selectedNewsletter] && (() => {
+        const winnerId = approvedMap[selectedNewsletter];
+        const winner = candidates.find(i => i[config.idField] === winnerId);
+        return (
+          <div className="status-bar" style={{background: "#EFF7F0", border: "1px solid #C0DFC4", marginBottom: 24}}>
+            <strong>{"\u2705"} Winner selected{winner ? `: ${winner[config.nameField]}` : ""}!</strong> — approved and sent to Notion
+          </div>
+        );
+      })()}
 
       {candidates.length === 0 ? (
         <div className="empty"><h2>{emptyMsg.title}</h2><p>{emptyMsg.sub}</p></div>
