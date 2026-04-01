@@ -230,8 +230,20 @@ def save_pets_to_notion(results: list, newsletter_name: str) -> None:
     print(f"Saved {saved} new pets to Notion")
 
 def approve_pet_in_notion(source_url: str) -> None:
-    """Set approved pet to approved, all others pending to rejected."""
+    """Set approved pet to approved, all others in same newsletter to rejected."""
     pages = query_database(NOTION_PETS_DB_ID)
+
+    # First find the approved pet to get its newsletter
+    approved_newsletter = None
+    for page in pages:
+        props    = page["properties"]
+        page_url = props.get("Source URL", {}).get("url", "")
+        if page_url == source_url:
+            newsletter = props.get("Newsletter", {}).get("select", {})
+            approved_newsletter = newsletter.get("name", "") if newsletter else ""
+            break
+
+    print(f"Approving for newsletter: {approved_newsletter}")
 
     for page in pages:
         page_id    = page["id"]
@@ -240,6 +252,12 @@ def approve_pet_in_notion(source_url: str) -> None:
         status_name = status.get("name", "") if status else ""
 
         if status_name != "pending":
+            continue
+
+        # Only reject pets from the same newsletter
+        newsletter  = props.get("Newsletter", {}).get("select", {})
+        newsletter_name = newsletter.get("name", "") if newsletter else ""
+        if newsletter_name != approved_newsletter:
             continue
 
         page_url   = props.get("Source URL", {}).get("url", "")
@@ -354,22 +372,40 @@ def save_restaurants_to_notion(results: list, newsletter_name: str) -> None:
     print(f"Saved {saved} new restaurants to Notion")
     
 def approve_restaurant_in_notion(place_id: str) -> None:
-    """Set approved restaurant to approved, all others pending to rejected."""
-    # Fetch all pending pages without filter
+    """Set approved restaurant to approved, all others in same newsletter to rejected."""
     pages = query_database(NOTION_RESTAURANTS_DB_ID)
+
+    # First find the approved restaurant to get its newsletter
+    approved_newsletter = None
+    for page in pages:
+        props     = page["properties"]
+        pid_prop  = props.get("Place ID", {}).get("rich_text", [])
+        page_place_id = pid_prop[0].get("text", {}).get("content", "") if pid_prop else ""
+        if page_place_id == place_id:
+            newsletter = props.get("Newsletter", {}).get("select", {})
+            approved_newsletter = newsletter.get("name", "") if newsletter else ""
+            break
+
+    print(f"Approving for newsletter: {approved_newsletter}")
 
     for page in pages:
         page_id    = page["id"]
         props      = page["properties"]
         status     = props.get("Status", {}).get("select", {})
         status_name = status.get("name", "") if status else ""
-        
+
         if status_name != "pending":
             continue
 
-        pid_prop   = props.get("Place ID", {}).get("rich_text", [])
+        # Only reject restaurants from the same newsletter
+        newsletter  = props.get("Newsletter", {}).get("select", {})
+        newsletter_name = newsletter.get("name", "") if newsletter else ""
+        if newsletter_name != approved_newsletter:
+            continue
+
+        pid_prop      = props.get("Place ID", {}).get("rich_text", [])
         page_place_id = pid_prop[0].get("text", {}).get("content", "") if pid_prop else ""
-        new_status = "approved" if page_place_id == place_id else "rejected"
+        new_status    = "approved" if page_place_id == place_id else "rejected"
         update_page(page_id, {"Status": {"select": {"name": new_status}}})
         name = props.get("Name", {}).get("title", [{}])[0].get("text", {}).get("content", "")
         print(f"{new_status}: {name}")
