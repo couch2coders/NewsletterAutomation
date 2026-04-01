@@ -203,7 +203,8 @@ def save_pets_to_notion(results: list, newsletter_name: str) -> None:
 
         properties = {
             "Name": {"title": [{"text": {"content": f"{newsletter_name.replace('_', ' ')} - {data.get('pet_name', '')}"}}]},
-            "Source URL":         {"url": data.get("listing_url") or data.get("source_url", "") or None},
+            "Source URL":   {"url": data.get("source_url") or None},
+            "Listing URL":  {"url": data.get("listing_url") or None},
             "Shelter":            {"rich_text": [{"text": {"content": safe_str(data.get("shelter_name"))}}]},
             "Blurb":              {"rich_text": [{"text": {"content": safe_str(data.get("blurb"))[:2000]}}]},
             "Shelter Address":    {"rich_text": [{"text": {"content": safe_str(data.get("shelter_address"))}}]},
