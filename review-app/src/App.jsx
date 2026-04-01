@@ -496,7 +496,7 @@ function ReviewPage({ config, token, onApprove, onUnapprove, approvedSections, o
       );
       if (!res.ok) { const err = await res.json(); throw new Error(err.message || "GitHub API error"); }
       setApprovedMap(prev => ({ ...prev, [selectedNewsletter]: itemId }));
-      setSuccess(`${item[config.nameField]} approved!`);
+      setSuccess({ newsletter: selectedNewsletter, name: item[config.nameField] });
       const savedApprovals = JSON.parse(localStorage.getItem(config.storageKey) || "{}");
       savedApprovals[selectedNewsletter] = itemId;
       localStorage.setItem(config.storageKey, JSON.stringify(savedApprovals));
@@ -574,7 +574,7 @@ function ReviewPage({ config, token, onApprove, onUnapprove, approvedSections, o
 
   return (
     <>
-      {success && <div className="success-banner"><strong>Approved!</strong>{success}</div>}
+      {success && success.newsletter === selectedNewsletter && <div className="success-banner"><strong>Approved!</strong>{success.name} approved!</div>}
       {error   && <div className="error-msg" style={{marginBottom: 24}}>{error}</div>}
 
       {newsletters.length > 0 && (
