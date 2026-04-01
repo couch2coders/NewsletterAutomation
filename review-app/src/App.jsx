@@ -138,7 +138,7 @@ function ReviewPage({ config, token, onApprove, onUnapprove, approvedSections, o
     setLoading(true);
     setError("");
     try {
-      const res  = await fetch(`/NewsletterAutomation/${config.dataFile}`);
+      const res  = await fetch(`/NewsletterAutomation/${config.dataFile}`, { cache: "no-store" });
       const rows = await res.json();
 
       const allNames = [...new Set(rows.map(r => r.newsletter_name).filter(Boolean))];
@@ -150,14 +150,23 @@ function ReviewPage({ config, token, onApprove, onUnapprove, approvedSections, o
         return item;
       });
 
+      // Build approvedMap purely from the data (source of truth)
       const dataApprovedMap = {};
       withStatus.forEach(item => {
         if (item._localStatus === "approved" && item.newsletter_name) {
           dataApprovedMap[item.newsletter_name] = item[config.idField];
         }
       });
-      setApprovedMap(prev => ({ ...prev, ...dataApprovedMap }));
-      Object.keys(dataApprovedMap).forEach(nl => onApprove(nl));
+      // Replace approvedMap with data-driven state — don't merge stale localStorage
+      setApprovedMap(dataApprovedMap);
+      // Sync approvedSections with what the data actually shows
+      allNames.forEach(nl => {
+        if (dataApprovedMap[nl]) onApprove(nl);
+        else onUnapprove(nl);
+      });
+
+      // Sync localStorage with data-driven approvedMap
+      localStorage.setItem(config.storageKey, JSON.stringify(dataApprovedMap));
 
       setNewsletters(allNames);
       if (allNames.length > 0) setNewsletter(prev => prev || allNames[0]);
