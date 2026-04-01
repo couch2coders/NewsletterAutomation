@@ -24,42 +24,79 @@ const styles = `
   }
 
   body { background: var(--cream); font-family: 'DM Sans', sans-serif; color: var(--bark); min-height: 100vh; }
-  .app { max-width: 1200px; margin: 0 auto; padding: 48px 24px; }
-
-/* ── Nav bar (vertical on desktop, dropdown on mobile) ── */
-  .nav-bar {
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 2px 12px var(--shadow);
-    margin-bottom: 40px;
-    overflow: hidden;
-  }
-  .nav-tabs {
-    display: flex;
-    flex-direction: column;
-  }
-  .nav-btn {
-    width: 100%;
-    padding: 14px 20px;
-    border: none;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s;
-    background: transparent;
-    color: #6B5744;
-    border-left: 3px solid transparent;
-    border-bottom: none;
-    text-align: left;
-  }
-  .nav-btn.active {
-    background: var(--cream);
-    color: var(--rust);
-    border-left: 3px solid var(--rust);
-    border-bottom: none;
-  }
-  .nav-btn:hover:not(.active) { background: var(--sand); }
+    .app { max-width: 1400px; margin: 0 auto; padding: 48px 24px; }
+  
+    /* ── Layout ── */
+    .app-layout {
+      display: grid;
+      grid-template-columns: 1fr 180px;
+      grid-template-areas:
+        "header  sidebar"
+        "content sidebar";
+      gap: 0 32px;
+      align-items: start;
+    }
+    .app-header  { grid-area: header; }
+    .app-content { grid-area: content; }
+  
+    /* ── Sidebar Nav ── */
+    .nav-bar {
+      grid-area: sidebar;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 12px var(--shadow);
+      overflow: hidden;
+      position: sticky;
+      top: 24px;
+    }
+    .nav-tabs { display: flex; flex-direction: column; }
+    .nav-btn {
+      width: 100%;
+      padding: 14px 20px;
+      border: none;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: transparent;
+      color: #6B5744;
+      border-left: 3px solid transparent;
+      text-align: left;
+    }
+    .nav-btn.active {
+      background: var(--cream);
+      color: var(--rust);
+      border-left: 3px solid var(--rust);
+    }
+    .nav-btn:hover:not(.active) { background: var(--sand); }
+  
+    /* Collapse to dropdown on small screens */
+    .nav-select-wrap { display: none; padding: 8px; }
+    .nav-select {
+      width: 100%;
+      padding: 10px 16px;
+      border-radius: 8px;
+      border: 1.5px solid var(--sand);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      background: var(--cream);
+      color: var(--bark);
+      cursor: pointer;
+      outline: none;
+    }
+    @media (max-width: 600px) {
+      .app-layout {
+        grid-template-columns: 1fr;
+        grid-template-areas:
+          "header"
+          "sidebar"
+          "content";
+      }
+      .nav-bar { position: static; }
+      .nav-tabs { display: none; }
+      .nav-select-wrap { display: block; }
+    }
 
   /* ── Header ── */
   .header { text-align: center; margin-bottom: 40px; }
@@ -418,7 +455,6 @@ function PetsPage({ token, onApprove, approvedSections }) {
 }
 
 // ── RESTAURANTS PAGE ──────────────────────────────────────────────────────────
-// ── RESTAURANTS PAGE ──────────────────────────────────────────────────────────
 function RestaurantsPage({ token, onApprove, approvedSections }) {
   const [restaurants, setRestaurants]       = useState([]);
   const [newsletters, setNewsletters]       = useState([]);
@@ -613,8 +649,9 @@ export default function App() {
               {error && <div className="error-msg">{error}</div>}
             </div>
           </>
-        ) : (
-          <>
+          ) : (
+          <div className="app-layout">
+            {/* Sidebar Nav */}
             <div className="nav-bar">
               <div className="nav-tabs">
                 {pages.map(p => (
@@ -630,17 +667,17 @@ export default function App() {
               </div>
             </div>
 
-            <div className="header">
+            {/* Page header */}
+            <div className="header app-header">
               <p className="header-eyebrow">{currentHeader.eyebrow}</p>
               <h1>{currentHeader.h1}</h1>
               <p className="header-sub">{currentHeader.sub}</p>
             </div>
 
-            {activePage === "pets"        && <PetsPage        token={token} onApprove={(n) => markApproved("pets", n)}        approvedSections={approvedSections} />}
-            {activePage === "restaurants" && <RestaurantsPage token={token} onApprove={(n) => markApproved("restaurants", n)} approvedSections={approvedSections} />}
-          </>
+            {/* Page content */}
+            <div className="app-content">
+              {activePage === "pets"        && <PetsPage        token={token} onApprove={(n) => markApproved("pets", n)}        approvedSections={approvedSections} />}
+              {activePage === "restaurants" && <RestaurantsPage token={token} onApprove={(n) => markApproved("restaurants", n)} approvedSections={approvedSections} />}
+            </div>
+          </div>
         )}
-      </div>
-    </>
-  );
-}
