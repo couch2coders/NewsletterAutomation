@@ -38,9 +38,7 @@ def export_pets():
     pets = []
     for page in pages:
         props = page["properties"]
-        status = props.get("Status", {}).get("select", {})
-        if status and status.get("name") != "pending":
-            continue
+        status_val = extract_text(props.get("Status", {})) or "pending"
         pets.append({
            "source_url":  extract_text(props.get("Source URL", {})),
             "listing_url": extract_text(props.get("Listing URL", {})),
@@ -53,7 +51,7 @@ def export_pets():
             "shelter_hours":      extract_text(props.get("Shelter Hours", {})),
             "photo_url":          extract_text(props.get("Photo URL", {})),
             "date_generated":     extract_text(props.get("Date Generated", {})),
-            "status":             "pending",
+            "status":             status_val,
             "newsletter_name":    extract_text(props.get("Newsletter", {})),
             "total_score":        str(extract_text(props.get("Total Score", {}))),
             "adoptability_score": str(extract_text(props.get("Adoptability Score", {}))),
@@ -68,7 +66,7 @@ def export_pets():
 
     with open("pets.json", "w") as f:
         json.dump(pets, f, indent=2)
-    print(f"Exported {len(pets)} pending pets to pets.json")
+    print(f"Exported {len(pets)} pets to pets.json")
 
 
 def export_restaurants():
@@ -76,9 +74,7 @@ def export_restaurants():
     restaurants = []
     for page in pages:
         props = page["properties"]
-        status = props.get("Status", {}).get("select", {})
-        if status and status.get("name") != "pending":
-            continue
+        status_val = extract_text(props.get("Status", {})) or "pending"
         restaurants.append({
             "place_id":               extract_text(props.get("Place ID", {})),
             "restaurant_name": extract_text(props.get("Name", {})).split(" - ", 1)[-1],
@@ -94,7 +90,7 @@ def export_restaurants():
             "review_count":           str(extract_text(props.get("Review Count", {}))),
             "price_level":            extract_text(props.get("Price Level", {})),
             "date_generated":         extract_text(props.get("Date Generated", {})),
-            "status":                 "pending",
+            "status":                 status_val,
             "newsletter_name":        extract_text(props.get("Newsletter", {})),
             "total_score":            str(extract_text(props.get("Total Score", {}))),
             "appeal_score":           str(extract_text(props.get("Appeal Score", {}))),
@@ -107,7 +103,7 @@ def export_restaurants():
 
     with open("restaurants.json", "w") as f:
         json.dump(restaurants, f, indent=2)
-    print(f"Exported {len(restaurants)} pending restaurants to restaurants.json")
+    print(f"Exported {len(restaurants)} restaurants to restaurants.json")
 
 if __name__ == "__main__":
     export_pets()
