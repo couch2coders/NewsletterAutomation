@@ -19,12 +19,11 @@ jobs:
 
       - run: pip install requests
 
-      - name: Redo section and update gh-pages JSON
+      - name: Sync Notion statuses back to pending
         env:
           NOTION_API_KEY:           ${{ secrets.NOTION_API_KEY }}
           NOTION_PETS_DB_ID:        ${{ secrets.NOTION_PETS_DB_ID }}
           NOTION_RESTAURANTS_DB_ID: ${{ secrets.NOTION_RESTAURANTS_DB_ID }}
           NEWSLETTER_NAME:          East_Cobb_Connect
           SECTION:                  ${{ github.event.inputs.section }}
-          GITHUB_TOKEN:             ${{ secrets.PAT_TOKEN }}
         run: python Code/redo_section.py

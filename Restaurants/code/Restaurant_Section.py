@@ -3,13 +3,12 @@
 Newsletter Automation - Restaurant Section
 Uses Google Places API to find local restaurants near each newsletter zip,
 generates blurbs via Claude, scores them with festive awareness,
-and writes results to Google Sheets Restaurants tab.
+and saves results to Notion.
 """
 import sys
 import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', 'Code'))
 
-from notion_helper import get_featured_place_ids, save_restaurants_to_notion
 import json
 import math
 import time
@@ -121,49 +120,7 @@ Focus on what makes the restaurant special, the vibe, and 1-2 must-try dishes.
 Keep it conversational, no em dashes, eighth-grade readability."""
 
 # ---------------------------------------------------------------------------
-# 6. GET PREVIOUSLY FEATURED RESTAURANTS (last 8 weeks)
-# ---------------------------------------------------------------------------
-def get_featured_place_ids(newsletter_name: str) -> set[str]:
-    try:
-        result = sheets_service.spreadsheets().values().get(
-            spreadsheetId=GSHEET_ID,
-            range=f"{GSHEET_TAB}!A:R"
-        ).execute()
-        rows = result.get("values", [])
-        if len(rows) < 2:
-            return set()
-
-        headers  = rows[0]
-        cutoff   = datetime.today() - timedelta(weeks=LOOKBACK_WEEKS)
-        featured = set()
-
-        place_id_col      = headers.index("place_id")           if "place_id"        in headers else 0
-        status_col        = headers.index("status")             if "status"          in headers else 14
-        date_col          = headers.index("date_generated")     if "date_generated"  in headers else 13
-        newsletter_col    = headers.index("newsletter_name")    if "newsletter_name" in headers else 16
-
-        for row in rows[1:]:
-            if len(row) <= max(place_id_col, status_col, date_col, newsletter_col):
-                continue
-            if row[newsletter_col] != newsletter_name:
-                continue
-            if row[status_col] != "approved":
-                continue
-            try:
-                date_generated = datetime.strptime(row[date_col], "%Y-%m-%d")
-                if date_generated >= cutoff:
-                    featured.add(row[place_id_col])
-            except ValueError:
-                continue
-
-        print(f"Loaded {len(featured)} featured restaurants to exclude (last {LOOKBACK_WEEKS} weeks)")
-        return featured
-    except Exception as e:
-        print(f"Error loading featured restaurants: {e}")
-        return set()
-
-# ---------------------------------------------------------------------------
-# 7. FETCH RESTAURANTS FROM GOOGLE PLACES API
+# 6. FETCH RESTAURANTS FROM GOOGLE PLACES API
 # ---------------------------------------------------------------------------
 
 def fetch_restaurants(lat: float, lng: float, excluded_place_ids: set, newsletter_name: str) -> list[dict]:
@@ -482,12 +439,7 @@ def flag_default_winner(results: list[dict]) -> list[dict]:
     return results
 
 # ---------------------------------------------------------------------------
-# 12. SAVE TO GOOGLE SHEETS
-# ---------------------------------------------------------------------------
-
-
-# ---------------------------------------------------------------------------
-# 13. MAIN
+# 12. MAIN
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
     print(f"Starting restaurant automation — {datetime.today().strftime('%Y-%m-%d')}")

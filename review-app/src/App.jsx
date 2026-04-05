@@ -223,46 +223,57 @@ function ReviewPage({ config, token, onApprove, onUnapprove, approvedSections, o
     if (!token) return;
     setError("");
     setRedoing(true);
+    const ghHeaders = { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json", "Content-Type": "application/json" };
     try {
+      // 1. Fetch current JSON from gh-pages
+      const fileUrl = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${config.dataFile}?ref=gh-pages`;
+      const fileRes = await fetch(fileUrl, { headers: ghHeaders });
+      if (!fileRes.ok) throw new Error("Could not fetch data file from gh-pages");
+      const fileInfo = await fileRes.json();
+      const rows = JSON.parse(atob(fileInfo.content));
+
+      // 2. Reset statuses for this newsletter to pending
+      let changed = 0;
+      for (const item of rows) {
+        if (item.newsletter_name === selectedNewsletter && ["approved", "rejected", "Approved", "Rejected"].includes(item.status)) {
+          item.status = "pending";
+          changed++;
+        }
+      }
+
+      // 3. Commit updated JSON back to gh-pages
+      const commitRes = await fetch(fileUrl, {
+        method: "PUT",
+        headers: ghHeaders,
+        body: JSON.stringify({
+          message: `redo: reset ${selectedNewsletter} ${config.redoSection} to pending`,
+          content: btoa(unescape(encodeURIComponent(JSON.stringify(rows, null, 2)))),
+          sha: fileInfo.sha,
+          branch: "gh-pages",
+        }),
+      });
+      if (!commitRes.ok) throw new Error("Could not update data file on gh-pages");
+
+      // 4. Update local state immediately
+      setApprovedMap(prev => { const next = { ...prev }; delete next[selectedNewsletter]; return next; });
+      onUnapprove(selectedNewsletter);
+      const savedApprovals = JSON.parse(localStorage.getItem(config.storageKey) || "{}");
+      delete savedApprovals[selectedNewsletter];
+      localStorage.setItem(config.storageKey, JSON.stringify(savedApprovals));
+      setItems(rows.map(item => {
+        const s = (item.status || "").toLowerCase();
+        if (s === "approved") return { ...item, _localStatus: "approved" };
+        if (s === "rejected") return { ...item, _localStatus: "rejected" };
+        return { ...item, _localStatus: undefined };
+      }));
+      setRedoing(false);
+
+      // 5. Fire-and-forget: dispatch Action to sync Notion in the background
       const workflowFile = config.redoWorkflow(selectedNewsletter);
-      const res = await fetch(
+      fetch(
         `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/actions/workflows/${workflowFile}/dispatches`,
-        { method: "POST", headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json", "Content-Type": "application/json" },
-          body: JSON.stringify({ ref: "main", inputs: { section: config.redoSection } }) }
-      );
-      if (!res.ok) { const err = await res.json(); throw new Error(err.message || "GitHub API error"); }
-      pollRef.current = setInterval(async () => {
-        try {
-          // Poll from raw GitHub to bypass GitHub Pages CDN cache
-          const rawUrl = `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/gh-pages/${config.dataFile}?t=${Date.now()}`;
-          const r    = await fetch(rawUrl, { cache: "no-store" });
-          const rows = await r.json();
-          const nlItems = rows.filter(i => i.newsletter_name === selectedNewsletter);
-          const hasApproved = nlItems.some(i => (i.status || "").toLowerCase() === "approved");
-          if (!hasApproved && nlItems.length > 0) {
-            clearInterval(pollRef.current);
-            pollRef.current = null;
-            setApprovedMap(prev => { const next = { ...prev }; delete next[selectedNewsletter]; return next; });
-            onUnapprove(selectedNewsletter);
-            const savedApprovals = JSON.parse(localStorage.getItem(config.storageKey) || "{}");
-            delete savedApprovals[selectedNewsletter];
-            localStorage.setItem(config.storageKey, JSON.stringify(savedApprovals));
-            setRedoing(false);
-            const allRows = rows.map(item => {
-              const s = (item.status || "").toLowerCase();
-              if (s === "approved") return { ...item, _localStatus: "approved" };
-              if (s === "rejected") return { ...item, _localStatus: "rejected" };
-              return { ...item, _localStatus: undefined };
-            });
-            setItems(allRows);
-          }
-        } catch {}
-      }, 4000);
-      timeoutRef.current = setTimeout(() => {
-        if (pollRef.current) clearInterval(pollRef.current);
-        pollRef.current = null;
-        setRedoing(false);
-      }, 300000);
+        { method: "POST", headers: ghHeaders, body: JSON.stringify({ ref: "main", inputs: { section: config.redoSection } }) }
+      ).catch(() => {}); // Notion sync is best-effort
     } catch (e) {
       setError(`Redo failed: ${e.message}`);
       setRedoing(false);
