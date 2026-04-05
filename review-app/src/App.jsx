@@ -159,20 +159,23 @@ function ReviewPage({ config, token, onApprove, onUnapprove, approvedSections, o
           dataApprovedMap[item.newsletter_name] = item[config.idField];
         }
       });
-      // Sync approvedMap with data — data is source of truth
-      setApprovedMap(prev => {
+      // Sync approvedMap: data wins, localStorage is fallback for in-flight approvals
+      // (redo already clears localStorage, so stale entries don't linger)
+      const savedApprovals = JSON.parse(localStorage.getItem(config.storageKey) || "{}");
+      setApprovedMap(() => {
         const merged = {};
         allNames.forEach(nl => {
           if (dataApprovedMap[nl]) {
             merged[nl] = dataApprovedMap[nl];
+          } else if (savedApprovals[nl]) {
+            merged[nl] = savedApprovals[nl];
           }
-          // If data shows all pending, don't carry over stale approvals
         });
         return merged;
       });
-      // Sync section checkmarks — add when data has approval, clear when it doesn't
+      // Sync section checkmarks
       allNames.forEach(nl => {
-        if (dataApprovedMap[nl]) onApprove(nl);
+        if (dataApprovedMap[nl] || savedApprovals[nl]) onApprove(nl);
         else onUnapprove(nl);
       });
 
