@@ -159,24 +159,21 @@ function ReviewPage({ config, token, onApprove, onUnapprove, approvedSections, o
           dataApprovedMap[item.newsletter_name] = item[config.idField];
         }
       });
-      // Merge: keep in-session approvals, but let data override
+      // Sync approvedMap with data — data is source of truth
       setApprovedMap(prev => {
         const merged = {};
-        // Keep in-session approvals (from handleApprove clicks)
-        Object.keys(prev).forEach(nl => { merged[nl] = prev[nl]; });
-        // Data overrides: if data says approved, use that; if data says all pending, clear it
         allNames.forEach(nl => {
           if (dataApprovedMap[nl]) {
             merged[nl] = dataApprovedMap[nl];
           }
-          // Only clear if data explicitly shows all pending AND we didn't just approve in this session
-          // (don't clear — let handleRedo's poll handle clearing)
+          // If data shows all pending, don't carry over stale approvals
         });
         return merged;
       });
-      // Sync section checkmarks
+      // Sync section checkmarks — add when data has approval, clear when it doesn't
       allNames.forEach(nl => {
         if (dataApprovedMap[nl]) onApprove(nl);
+        else onUnapprove(nl);
       });
 
       setNewsletters(allNames);
