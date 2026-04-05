@@ -39,82 +39,7 @@ CLAUDE_API_KEY    = os.environ["CLAUDE_API_KEY"]
 APIFY_API_KEY     = os.environ["APIFY_API_KEY"]
 SKILL_PROMPT_PATH = Path(__file__).parent.parent / "Skills" / "newsletter-pet-adoption-skill_auto.md"
 
-APIFY_ACTOR_ID    = "apify~web-scraper"
-APIFY_TIMEOUT     = 300  # seconds to wait for scraper run
-
-# pageFunction runs inside the Apify headless browser on the Petfinder page.
-# Petfinder is a Next.js app — pet data is embedded in __NEXT_DATA__ JSON.
-PETFINDER_PAGE_FUNCTION = """
-async function pageFunction(context) {
-    const { page, request, log } = context;
-
-    // Wait for page to fully render
-    await page.waitForTimeout(5000);
-
-    // Try __NEXT_DATA__ first (Next.js embedded data)
-    const nextData = await page.evaluate(() => {
-        const el = document.querySelector('script#__NEXT_DATA__');
-        if (el) {
-            try { return JSON.parse(el.textContent); } catch(e) { return null; }
-        }
-        return null;
-    });
-
-    if (nextData) {
-        log.info('Found __NEXT_DATA__, extracting animals...');
-        // Navigate the Next.js data structure to find animal results
-        const pageProps = nextData.props?.pageProps || {};
-        const searchData = pageProps.searchData || pageProps.initialState?.search || {};
-        const animals = searchData.animals || searchData.result?.animals || pageProps.animals || [];
-
-        if (animals.length > 0) {
-            log.info(`Found ${animals.length} animals in __NEXT_DATA__`);
-            return animals.map(a => ({
-                name: a.name || '',
-                url: a.url ? `https://www.petfinder.com${a.url}` : '',
-                species: a.species || a.type || '',
-                breed: a.breeds?.primary || a.breed || '',
-                age: a.age || '',
-                gender: a.gender || a.sex || '',
-                size: a.size || '',
-                description: a.description || '',
-                photos: (a.photos || a.primary_photo_cropped ? [a.primary_photo_cropped] : []).concat(a.photos || []).filter(Boolean).map(p => typeof p === 'string' ? p : (p.large || p.full || p.medium || p.small || '')).filter(Boolean),
-                organization: a.organization || a.contact || {},
-                status: a.status || '',
-            }));
-        }
-    }
-
-    // Fallback: scrape the DOM directly
-    log.info('Falling back to DOM scraping...');
-    await page.waitForTimeout(3000);
-
-    const pets = await page.evaluate(() => {
-        const results = [];
-        // Try multiple possible selectors for pet cards
-        const cards = document.querySelectorAll('[data-test="Pet_Card"], .petCard, article[class*="pet"], [class*="AnimalCard"], a[href*="/cat/"], a[href*="/dog/"]');
-        cards.forEach(card => {
-            const link = card.tagName === 'A' ? card : card.querySelector('a[href*="/cat/"], a[href*="/dog/"]');
-            const nameEl = card.querySelector('[data-test="Pet_Card_Name"], h2, h3, [class*="name"], [class*="Name"]');
-            const breedEl = card.querySelector('[data-test="Pet_Card_Breed"], [class*="breed"], [class*="Breed"]');
-            const imgEl = card.querySelector('img');
-
-            if (link || nameEl) {
-                results.push({
-                    name: nameEl ? nameEl.textContent.trim() : '',
-                    url: link ? (link.href.startsWith('http') ? link.href : 'https://www.petfinder.com' + link.getAttribute('href')) : '',
-                    breed: breedEl ? breedEl.textContent.trim() : '',
-                    photo: imgEl ? (imgEl.src || imgEl.dataset.src || '') : '',
-                });
-            }
-        });
-        return results;
-    });
-
-    log.info(`DOM scraping found ${pets.length} pet cards`);
-    return pets;
-}
-"""
+APIFY_SCRAPER_TIMEOUT = 120  # seconds
 
 
 # ---------------------------------------------------------------------------
@@ -136,58 +61,142 @@ approved_urls = get_approved_pet_urls()
 # 5. FETCH PETS FROM PETFINDER VIA APIFY
 # ---------------------------------------------------------------------------
 
-def run_apify_actor(search_url: str, max_items: int = 20) -> list[dict]:
-    """Run apify/web-scraper with a custom pageFunction to scrape Petfinder."""
-    api_url = f"https://api.apify.com/v2/acts/{APIFY_ACTOR_ID}/runs?token={APIFY_API_KEY}&waitForFinish={APIFY_TIMEOUT}"
-    payload = {
-        "startUrls": [{"url": search_url}],
-        "pageFunction": PETFINDER_PAGE_FUNCTION,
-        "proxyConfiguration": {"useApifyProxy": True},
-        "waitUntil": "networkidle2",
+def fetch_html_apify(url: str, retries: int = 2) -> str | None:
+    """Fetch a page's rendered HTML via Apify web-scraper."""
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {APIFY_API_KEY}",
     }
-    print(f"  Starting Apify web-scraper for: {search_url}")
-    res = requests.post(api_url, json=payload, timeout=APIFY_TIMEOUT + 30)
-    res.raise_for_status()
-    run_data = res.json().get("data", {})
-    run_status = run_data.get("status")
-    dataset_id = run_data.get("defaultDatasetId")
+    for attempt in range(retries):
+        try:
+            res = requests.post(
+                "https://api.apify.com/v2/acts/apify~web-scraper/run-sync-get-dataset-items",
+                headers=headers,
+                json={
+                    "startUrls": [{"url": url}],
+                    "pageFunction": """
+async function pageFunction(context) {
+    return {
+        url: context.request.url,
+        html: document.documentElement.outerHTML
+    };
+}
+""",
+                    "maxConcurrency": 1,
+                    "maxRequestsPerCrawl": 1,
+                },
+                timeout=APIFY_SCRAPER_TIMEOUT,
+            )
+            if res.status_code != 200:
+                print(f"  Apify error {res.status_code}: {res.text[:200]}")
+                if attempt < retries - 1:
+                    time.sleep(3)
+                    continue
+                return None
+            items = res.json()
+            if items and len(items) > 0:
+                return items[0].get("html")
+            return None
+        except requests.exceptions.ReadTimeout:
+            print(f"  Timeout on attempt {attempt + 1} for {url}")
+            if attempt < retries - 1:
+                time.sleep(3)
+    return None
 
-    if run_status != "SUCCEEDED":
-        run_id = run_data.get("id")
-        print(f"  Run {run_id} status: {run_status}, polling...")
-        for _ in range(60):
-            time.sleep(5)
-            check = requests.get(
-                f"https://api.apify.com/v2/actor-runs/{run_id}?token={APIFY_API_KEY}",
-                timeout=30,
-            ).json().get("data", {})
-            run_status = check.get("status")
-            if run_status in ("SUCCEEDED", "FAILED", "ABORTED", "TIMED-OUT"):
-                dataset_id = check.get("defaultDatasetId")
-                break
-        if run_status != "SUCCEEDED":
-            print(f"  Apify run failed with status: {run_status}")
-            return []
 
-    # Fetch dataset items
-    items_url = f"https://api.apify.com/v2/datasets/{dataset_id}/items?token={APIFY_API_KEY}&format=json"
-    items_res = requests.get(items_url, timeout=60)
-    items_res.raise_for_status()
-    raw = items_res.json()
+def parse_petfinder_html(html: str, species: str) -> list[dict]:
+    """Parse Petfinder search results HTML into pet dicts."""
+    from bs4 import BeautifulSoup
 
-    # web-scraper wraps pageFunction return in a list of objects with a "data" key
-    # or returns the array directly — flatten either way
-    items = []
-    for entry in raw:
-        if isinstance(entry, dict) and isinstance(entry.get("data"), list):
-            items.extend(entry["data"])
-        elif isinstance(entry, dict) and entry.get("name"):
-            items.append(entry)
-        elif isinstance(entry, list):
-            items.extend(entry)
+    soup = BeautifulSoup(html, "html.parser")
+    pets = []
 
-    print(f"  Apify returned {len(items)} pet items")
-    return items
+    # Try __NEXT_DATA__ first (Next.js embedded JSON with full pet data)
+    next_data_tag = soup.find("script", id="__NEXT_DATA__")
+    if next_data_tag:
+        try:
+            next_data = json.loads(next_data_tag.string)
+            # Navigate Next.js data structure
+            page_props = next_data.get("props", {}).get("pageProps", {})
+            # Try multiple possible paths for animal data
+            animals = []
+            for path in [
+                page_props.get("searchData", {}).get("animals", []),
+                page_props.get("animals", []),
+                page_props.get("initialState", {}).get("search", {}).get("animals", []),
+            ]:
+                if path:
+                    animals = path
+                    break
+
+            print(f"  __NEXT_DATA__: found {len(animals)} animals")
+            for a in animals:
+                pet_path = a.get("url", "")
+                pet_url = f"https://www.petfinder.com{pet_path}" if pet_path and not pet_path.startswith("http") else pet_path
+
+                photos = []
+                for p in (a.get("photos") or []):
+                    photo_url = p.get("large") or p.get("full") or p.get("medium") or p.get("small") or ""
+                    if photo_url:
+                        photos.append(photo_url)
+                if not photos:
+                    crop = a.get("primary_photo_cropped") or {}
+                    if isinstance(crop, dict):
+                        photo_url = crop.get("large") or crop.get("full") or crop.get("medium") or crop.get("small") or ""
+                        if photo_url:
+                            photos.append(photo_url)
+
+                contact = a.get("contact", {})
+                org_addr = contact.get("address", {})
+                address_parts = [org_addr.get("address1", ""), org_addr.get("city", ""),
+                                 org_addr.get("state", ""), org_addr.get("postcode", "")]
+                address_str = " ".join(p for p in address_parts if p).strip()
+
+                pets.append({
+                    "name":        a.get("name", ""),
+                    "url":         pet_url,
+                    "species":     a.get("species", species),
+                    "breed":       (a.get("breeds") or {}).get("primary", ""),
+                    "age":         a.get("age", ""),
+                    "gender":      a.get("gender", ""),
+                    "size":        a.get("size", ""),
+                    "description": a.get("description", ""),
+                    "photos":      photos,
+                    "org_name":    a.get("organization_id", ""),
+                    "org_address": address_str,
+                    "org_phone":   contact.get("phone", ""),
+                    "org_email":   contact.get("email", ""),
+                })
+            if pets:
+                return pets
+        except (json.JSONDecodeError, KeyError) as e:
+            print(f"  __NEXT_DATA__ parse error: {e}")
+
+    # Fallback: parse DOM with BeautifulSoup
+    print("  Falling back to DOM parsing...")
+    cards = soup.select('a[href*="/cat/"], a[href*="/dog/"]')
+    for card in cards:
+        href = card.get("href", "")
+        if not href or "/search/" in href:
+            continue
+        pet_url = f"https://www.petfinder.com{href}" if href.startswith("/") else href
+        name_el = card.select_one("h2, h3, [class*='name'], [class*='Name']")
+        breed_el = card.select_one("[class*='breed'], [class*='Breed']")
+        img_el = card.select_one("img")
+        name = name_el.get_text(strip=True) if name_el else ""
+        breed = breed_el.get_text(strip=True) if breed_el else ""
+        photo = (img_el.get("src") or img_el.get("data-src") or "") if img_el else ""
+
+        if name:
+            pets.append({
+                "name": name, "url": pet_url, "species": species,
+                "breed": breed, "age": "", "gender": "", "size": "",
+                "description": "", "photos": [photo] if photo else [],
+                "org_name": "", "org_address": "", "org_phone": "", "org_email": "",
+            })
+
+    print(f"  DOM parsing found {len(pets)} pets")
+    return pets
 
 
 def fetch_petfinder_apify(species: str, excluded_urls: set, state: str, zip_code: str, target: int = 5) -> list[dict]:
@@ -195,7 +204,12 @@ def fetch_petfinder_apify(species: str, excluded_urls: set, state: str, zip_code
     print(f"\n--- Fetching {species}s from Petfinder via Apify ---")
 
     search_url = f"https://www.petfinder.com/search/{species.lower()}s-for-adoption/us/{state}/{zip_code}/"
-    raw_items = run_apify_actor(search_url, max_items=target * 3)
+    html = fetch_html_apify(search_url)
+    if not html:
+        print(f"  Failed to fetch HTML for {search_url}")
+        return []
+    print(f"  Got {len(html)} chars of HTML")
+    raw_items = parse_petfinder_html(html, species.lower())
 
     pets = []
     for item in raw_items:
