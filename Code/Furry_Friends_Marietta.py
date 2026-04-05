@@ -673,9 +673,10 @@ if __name__ == "__main__":
                 detail_urls.append(c["url"].rstrip("/"))
             print(f"  {nl['name']} {species}: {len(candidates)} candidates")
 
-    # Deduplicate detail URLs
+    # Deduplicate and remove already-approved URLs before scraping
     detail_urls = list(dict.fromkeys(detail_urls))
-    print(f"\n  Total detail pages to scrape: {len(detail_urls)}")
+    detail_urls = [u for u in detail_urls if u not in approved_urls]
+    print(f"\n  Total detail pages to scrape: {len(detail_urls)} (excluded {len(approved_urls)} approved)")
 
     # ── PHASE 3: Scrape detail pages in batches of 10 ────────────────
     BATCH_SIZE = 10

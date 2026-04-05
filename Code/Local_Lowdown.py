@@ -1,0 +1,264 @@
+#!/usr/bin/env python3
+"""
+Newsletter Automation - Local Lowdown Section
+Scrapes Google News via Apify for local news stories,
+then uses Claude to select the best 3-5 and write the section.
+Saves results to Notion.
+
+To add a new newsletter, just add an entry to NEWSLETTERS with search terms.
+No hardcoded news sources needed — Google News finds them automatically.
+"""
+import os
+import sys
+import json
+import time
+from datetime import datetime
+from pathlib import Path
+
+import requests
+import anthropic
+
+sys.path.append(os.path.dirname(__file__))
+from notion_helper import create_page, query_database, HEADERS
+
+# ---------------------------------------------------------------------------
+# 1. ENVIRONMENT & CONFIG
+# ---------------------------------------------------------------------------
+CLAUDE_API_KEY  = os.environ["CLAUDE_API_KEY"]
+APIFY_API_KEY   = os.environ["APIFY_API_KEY"]
+NOTION_API_KEY  = os.environ["NOTION_API_KEY"]
+
+# Optional: save lowdown results to a Notion database
+NOTION_LOWDOWN_DB_ID = os.environ.get("NOTION_LOWDOWN_DB_ID", "")
+
+SKILL_PROMPT_PATH = Path(__file__).parent.parent / "Skills" / "newsletter-local-lowdown-skill_auto.md"
+
+APIFY_NEWS_ACTOR = "automation-lab~google-news-scraper"
+APIFY_TIMEOUT    = 120
+MAX_ARTICLES     = 30  # per query
+
+NEWSLETTERS = [
+    {
+        "name":         "East_Cobb_Connect",
+        "search_terms": ["East Cobb", "East Cobb GA news", "Cobb County East Cobb"],
+        "display_area": "East Cobb",
+    },
+    {
+        "name":         "Perimeter_Post",
+        "search_terms": ["Perimeter Dunwoody news", "Sandy Springs Dunwoody", "Perimeter Atlanta"],
+        "display_area": "Perimeter",
+    },
+]
+
+
+# ---------------------------------------------------------------------------
+# 2. LOAD SKILL PROMPT
+# ---------------------------------------------------------------------------
+def load_skill_prompt() -> str:
+    if SKILL_PROMPT_PATH.exists():
+        return SKILL_PROMPT_PATH.read_text(encoding="utf-8")
+    return "You are a local newsletter writer. Select 3-5 timely local news stories and write concise summaries."
+
+
+# ---------------------------------------------------------------------------
+# 3. SCRAPE GOOGLE NEWS VIA APIFY
+# ---------------------------------------------------------------------------
+def fetch_news_apify(search_terms: list[str]) -> list[dict]:
+    """Fetch recent news articles from Google News via Apify."""
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {APIFY_API_KEY}",
+    }
+
+    all_articles = []
+    seen_urls = set()
+
+    # Run one Apify call with all queries
+    print(f"  Searching Google News for: {search_terms}")
+    try:
+        res = requests.post(
+            f"https://api.apify.com/v2/acts/{APIFY_NEWS_ACTOR}/run-sync-get-dataset-items",
+            headers=headers,
+            json={
+                "queries": search_terms,
+                "language": "en",
+                "country": "US",
+                "maxArticles": MAX_ARTICLES,
+            },
+            timeout=APIFY_TIMEOUT,
+        )
+        if res.status_code not in (200, 201):
+            print(f"  Apify error {res.status_code}: {res.text[:300]}")
+            return []
+
+        items = res.json()
+        print(f"  Apify returned {len(items)} articles")
+
+        for item in items:
+            url = item.get("url") or item.get("link") or ""
+            if not url or url in seen_urls:
+                continue
+            seen_urls.add(url)
+
+            all_articles.append({
+                "title":   item.get("title") or item.get("headline") or "",
+                "url":     url,
+                "source":  item.get("source") or item.get("publisher") or "",
+                "date":    item.get("publishedAt") or item.get("date") or item.get("published") or "",
+                "summary": item.get("description") or item.get("snippet") or item.get("text") or "",
+            })
+
+    except requests.exceptions.ReadTimeout:
+        print(f"  Apify timeout after {APIFY_TIMEOUT}s")
+    except Exception as e:
+        print(f"  Apify error: {e}")
+
+    # Deduplicate by title similarity (exact match)
+    unique = []
+    seen_titles = set()
+    for a in all_articles:
+        title_key = a["title"].lower().strip()
+        if title_key not in seen_titles:
+            seen_titles.add(title_key)
+            unique.append(a)
+
+    print(f"  {len(unique)} unique articles after dedup")
+    return unique
+
+
+# ---------------------------------------------------------------------------
+# 4. CLAUDE: SELECT AND WRITE LOCAL LOWDOWN
+# ---------------------------------------------------------------------------
+def write_local_lowdown(articles: list[dict], newsletter_name: str, display_area: str,
+                        skill_prompt: str, pub_date: str) -> dict:
+    """Use Claude to select best stories and write the Local Lowdown section."""
+    client = anthropic.Anthropic(api_key=CLAUDE_API_KEY)
+
+    articles_json = json.dumps(articles, indent=2)
+
+    response = client.messages.create(
+        model="claude-sonnet-4-20250514",
+        max_tokens=4000,
+        system=skill_prompt,
+        messages=[{
+            "role": "user",
+            "content": f"""
+Here are recent local news articles scraped from Google News for the {display_area} area.
+
+Newsletter: {newsletter_name}
+Publication date: {pub_date}
+Coverage area: {display_area}
+
+Select the best 3-5 stories and write the Local Lowdown section.
+Return ONLY valid JSON, no preamble or markdown fences.
+
+Articles:
+{articles_json}
+"""
+        }]
+    )
+
+    raw = next(block.text for block in response.content if block.type == "text")
+    clean = raw.strip().removeprefix("```json").removesuffix("```").strip()
+    result = json.loads(clean)
+
+    stories = result.get("stories", [])
+    print(f"  Claude selected {len(stories)} stories")
+    for s in stories:
+        print(f"    {s.get('emoji', '')} {s.get('headline', '')}")
+
+    return result
+
+
+# ---------------------------------------------------------------------------
+# 5. SAVE TO NOTION (optional)
+# ---------------------------------------------------------------------------
+def save_lowdown_to_notion(result: dict, newsletter_name: str) -> None:
+    """Save the Local Lowdown section to Notion."""
+    if not NOTION_LOWDOWN_DB_ID:
+        print("  No NOTION_LOWDOWN_DB_ID set, skipping Notion save")
+        return
+
+    stories = result.get("stories", [])
+    section_header = result.get("section_header", "")
+
+    # Build the full section text for easy copy-paste
+    section_text = f"## {section_header}\n\n"
+    for story in stories:
+        emoji = story.get("emoji", "")
+        headline = story.get("headline", "")
+        body = story.get("body", "")
+        sources = story.get("source_urls", [])
+        source_links = " | ".join(f"[{s['label']}]({s['url']})" for s in sources)
+
+        section_text += f"### {emoji} **{headline}**\n\n"
+        section_text += f"{body}\n\n"
+        if source_links:
+            section_text += f"More: {source_links}\n\n"
+
+    properties = {
+        "Name":           {"title": [{"text": {"content": f"{newsletter_name.replace('_', ' ')} - Local Lowdown - {datetime.today().strftime('%Y-%m-%d')}"}}]},
+        "Date Generated": {"date": {"start": datetime.today().strftime("%Y-%m-%d")}},
+        "Newsletter":     {"select": {"name": newsletter_name}},
+        "Section":        {"select": {"name": "local_lowdown"}},
+        "Status":         {"select": {"name": "pending"}},
+    }
+
+    try:
+        create_page(NOTION_LOWDOWN_DB_ID, properties)
+        print(f"  ✓ Saved to Notion")
+    except Exception as e:
+        print(f"  ✗ Notion save failed: {e}")
+
+    # Also save the full text to a local file for easy access
+    output_dir = Path(__file__).parent / "output"
+    output_dir.mkdir(exist_ok=True)
+    output_file = output_dir / f"lowdown_{newsletter_name}_{datetime.today().strftime('%Y%m%d')}.md"
+    output_file.write_text(section_text, encoding="utf-8")
+    print(f"  ✓ Saved to {output_file}")
+
+    # Save raw JSON too
+    json_file = output_dir / f"lowdown_{newsletter_name}_{datetime.today().strftime('%Y%m%d')}.json"
+    json_file.write_text(json.dumps(result, indent=2), encoding="utf-8")
+    print(f"  ✓ Saved JSON to {json_file}")
+
+
+# ---------------------------------------------------------------------------
+# 6. MAIN
+# ---------------------------------------------------------------------------
+if __name__ == "__main__":
+    print(f"Starting Local Lowdown automation — {datetime.today().strftime('%Y-%m-%d')}")
+    skill_prompt = load_skill_prompt()
+    pub_date = datetime.today().strftime("%Y-%m-%d")
+
+    for newsletter in NEWSLETTERS:
+        print(f"\n{'='*60}")
+        print(f"Processing: {newsletter['name']} ({newsletter['display_area']})")
+        print(f"{'='*60}")
+
+        # Scrape Google News
+        articles = fetch_news_apify(newsletter["search_terms"])
+
+        if not articles:
+            print(f"  No articles found for {newsletter['name']}. Skipping.")
+            continue
+
+        # Add coverage area to each article for Claude
+        for a in articles:
+            a["coverage_area"] = newsletter["name"]
+
+        # Claude selects and writes
+        print(f"\n  Sending {len(articles)} articles to Claude...")
+        result = write_local_lowdown(
+            articles=articles,
+            newsletter_name=newsletter["name"],
+            display_area=newsletter["display_area"],
+            skill_prompt=skill_prompt,
+            pub_date=pub_date,
+        )
+
+        # Save
+        save_lowdown_to_notion(result, newsletter["name"])
+        print(f"\n  Done with {newsletter['name']}.")
+
+    print(f"\nAll newsletters complete.")
