@@ -140,10 +140,15 @@ function ReviewPage({ config, token, onApprove, onUnapprove, approvedSections, o
     setLoading(true);
     setError("");
     try {
-      // Fetch from raw GitHub to bypass CDN cache — data is always fresh
-      const rawUrl = `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/gh-pages/${config.dataFile}?t=${Date.now()}`;
-      const res  = await fetch(rawUrl, { cache: "no-store" });
-      const rows = await res.json();
+      // Fetch via GitHub Contents API — always returns latest committed data, no caching
+      const ghHeaders = token
+        ? { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json" }
+        : { Accept: "application/vnd.github+json" };
+      const fileUrl = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${config.dataFile}?ref=gh-pages`;
+      const res = await fetch(fileUrl, { headers: ghHeaders });
+      if (!res.ok) throw new Error("Could not fetch data");
+      const fileInfo = await res.json();
+      const rows = JSON.parse(atob(fileInfo.content.replace(/\n/g, "")));
 
       const allNames = [...new Set(rows.map(r => r.newsletter_name).filter(Boolean))];
 
