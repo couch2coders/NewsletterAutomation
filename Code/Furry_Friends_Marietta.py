@@ -172,31 +172,120 @@ def parse_petfinder_html(html: str, species: str) -> list[dict]:
         except (json.JSONDecodeError, KeyError) as e:
             print(f"  __NEXT_DATA__ parse error: {e}")
 
-    # Fallback: parse DOM with BeautifulSoup
-    print("  Falling back to DOM parsing...")
-    cards = soup.select('a[href*="/cat/"], a[href*="/dog/"]')
-    for card in cards:
-        href = card.get("href", "")
+    # Parse DOM: pet cards are in grandparent div.tw-h-[450px] > div > a[href]
+    print("  Parsing DOM for pet cards...")
+    seen_hrefs = set()
+    all_links = soup.select("a[href]")
+    for link in all_links:
+        href = link.get("href", "")
         if not href or "/search/" in href:
             continue
+        if "/cat/" not in href and "/dog/" not in href:
+            continue
+        if href in seen_hrefs:
+            continue
+        seen_hrefs.add(href)
+
         pet_url = f"https://www.petfinder.com{href}" if href.startswith("/") else href
-        name_el = card.select_one("h2, h3, [class*='name'], [class*='Name']")
-        breed_el = card.select_one("[class*='breed'], [class*='Breed']")
-        img_el = card.select_one("img")
+
+        # Card data lives in the grandparent container
+        card = link.parent.parent if link.parent else None
+        if not card:
+            continue
+
+        # Name: div.tw-font-extrabold
+        name_el = card.select_one("div.tw-font-extrabold")
         name = name_el.get_text(strip=True) if name_el else ""
+
+        # Age + Gender: first span in the info area (e.g. "Young • Male")
+        age_gender = ""
+        info_div = card.select_one("div.tw-text-primary-600")
+        if info_div:
+            first_span = info_div.select_one("span")
+            if first_span:
+                age_gender = first_span.get_text(strip=True)
+
+        age, gender = "", ""
+        if "•" in age_gender:
+            parts = [p.strip() for p in age_gender.split("•")]
+            age = parts[0] if len(parts) > 0 else ""
+            gender = parts[1] if len(parts) > 1 else ""
+
+        # Breed: span.tw-truncate
+        breed_el = card.select_one("span.tw-truncate")
         breed = breed_el.get_text(strip=True) if breed_el else ""
-        photo = (img_el.get("src") or img_el.get("data-src") or "") if img_el else ""
+
+        # Photo: img inside the link
+        img_el = link.select_one("img")
+        photo = ""
+        if img_el:
+            photo = img_el.get("src") or img_el.get("data-src") or ""
+
+        # Alt text has extra info (e.g. "Luke, ADOPTABLE, Young • Male, German Shepherd Dog")
+        alt_text = img_el.get("alt", "") if img_el else ""
 
         if name:
             pets.append({
                 "name": name, "url": pet_url, "species": species,
-                "breed": breed, "age": "", "gender": "", "size": "",
-                "description": "", "photos": [photo] if photo else [],
+                "breed": breed, "age": age, "gender": gender, "size": "",
+                "description": alt_text,  # use alt text as basic description from search page
+                "photos": [photo] if photo else [],
                 "org_name": "", "org_address": "", "org_phone": "", "org_email": "",
             })
 
     print(f"  DOM parsing found {len(pets)} pets")
     return pets
+
+
+def scrape_pet_detail(pet_url: str) -> dict:
+    """Scrape a single Petfinder pet detail page for description and shelter info."""
+    html = fetch_html_apify(pet_url, retries=1)
+    if not html:
+        return {}
+
+    from bs4 import BeautifulSoup
+    soup = BeautifulSoup(html, "html.parser")
+    detail = {}
+
+    # Try __NEXT_DATA__ on detail page
+    next_tag = soup.find("script", id="__NEXT_DATA__")
+    if next_tag:
+        try:
+            nd = json.loads(next_tag.string)
+            pp = nd.get("props", {}).get("pageProps", {})
+            animal = pp.get("animal") or pp.get("pet") or {}
+            if animal:
+                detail["description"] = animal.get("description", "")
+                contact = animal.get("contact", {})
+                org_addr = contact.get("address", {})
+                addr_parts = [org_addr.get("address1", ""), org_addr.get("city", ""),
+                              org_addr.get("state", ""), org_addr.get("postcode", "")]
+                detail["org_address"] = " ".join(p for p in addr_parts if p).strip()
+                detail["org_phone"] = contact.get("phone", "")
+                detail["org_email"] = contact.get("email", "")
+                detail["org_name"] = animal.get("organization_id", "")
+                # Get more photos
+                photos = []
+                for p in (animal.get("photos") or []):
+                    url = p.get("large") or p.get("full") or p.get("medium") or ""
+                    if url:
+                        photos.append(url)
+                if photos:
+                    detail["photos"] = photos
+                detail["size"] = animal.get("size", "")
+                detail["age"] = animal.get("age", "")
+                detail["gender"] = animal.get("gender", "")
+                detail["breed"] = (animal.get("breeds") or {}).get("primary", "")
+                return detail
+        except Exception as e:
+            print(f"    Detail __NEXT_DATA__ error: {e}")
+
+    # Fallback: parse detail page DOM
+    desc_el = soup.select_one("[data-test='Pet_Story_Section'], [class*='description'], [class*='Description']")
+    if desc_el:
+        detail["description"] = desc_el.get_text(strip=True)
+
+    return detail
 
 
 def fetch_petfinder_apify(species: str, excluded_urls: set, state: str, zip_code: str, target: int = 5) -> list[dict]:
@@ -211,64 +300,50 @@ def fetch_petfinder_apify(species: str, excluded_urls: set, state: str, zip_code
     print(f"  Got {len(html)} chars of HTML")
     raw_items = parse_petfinder_html(html, species.lower())
 
-    pets = []
+    # Filter out excluded pets, then scrape detail pages for descriptions
+    candidates = []
     for item in raw_items:
+        pet_url = item.get("url", "").rstrip("/")
+        if not pet_url:
+            continue
+        if pet_url in excluded_urls:
+            print(f"  ✗ Skipping previously approved: {item.get('name')}")
+            continue
+        candidates.append(item)
+
+    print(f"  {len(candidates)} candidates after exclusion filter (need {target})")
+
+    pets = []
+    for item in candidates:
         if len(pets) >= target:
             break
 
-        # Build the Petfinder listing URL (source of truth for dedup)
-        pet_url = item.get("url") or item.get("petfinderUrl") or ""
-        if not pet_url:
-            continue
+        source_url = item["url"].rstrip("/")
+        name       = item.get("name", "Unknown")
 
-        # Normalize URL for dedup
-        source_url = pet_url.rstrip("/")
+        # Scrape the detail page for description and shelter info
+        print(f"  Fetching detail page for {name}...")
+        detail = scrape_pet_detail(source_url)
 
-        if source_url in excluded_urls:
-            print(f"  ✗ Skipping previously approved: {source_url}")
-            continue
-
-        name        = item.get("name") or item.get("petName") or "Unknown"
-        description = item.get("description") or ""
+        description = detail.get("description") or item.get("description") or ""
         if not description or len(description.strip()) < 30:
+            print(f"  ✗ No description for {name}, skipping")
             continue
 
-        breed   = item.get("breed") or item.get("breedPrimary") or item.get("breeds", {}).get("primary", "") or ""
-        age     = item.get("age") or ""
-        gender  = item.get("gender") or item.get("sex") or ""
-        size    = item.get("size") or ""
-
-        # Photos
-        photos_raw = item.get("photos") or item.get("images") or []
-        photos = []
-        for p in photos_raw[:3]:
-            if isinstance(p, str):
-                photos.append(p)
-            elif isinstance(p, dict):
-                photos.append(p.get("large") or p.get("full") or p.get("medium") or p.get("small") or "")
-
-        # Organization / shelter info
-        org = item.get("organization") or item.get("shelter") or {}
-        if isinstance(org, str):
-            org = {"name": org}
-        org_name    = org.get("name") or item.get("organizationName") or item.get("shelterName") or ""
-        org_address = org.get("address") or ""
-        if isinstance(org_address, dict):
-            parts = [org_address.get("address1", ""), org_address.get("city", ""),
-                     org_address.get("state", ""), org_address.get("postcode", "")]
-            org_address = " ".join(p for p in parts if p).strip()
-        org_phone = org.get("phone") or item.get("phone") or ""
-        org_email = org.get("email") or item.get("email") or ""
+        breed      = detail.get("breed") or item.get("breed", "")
+        age        = detail.get("age") or item.get("age", "")
+        gender     = detail.get("gender") or item.get("gender", "")
+        size       = detail.get("size") or item.get("size", "")
+        photos     = detail.get("photos") or item.get("photos", [])
+        org_name   = detail.get("org_name") or item.get("org_name", "")
+        org_address = detail.get("org_address") or item.get("org_address", "")
+        org_phone  = detail.get("org_phone") or item.get("org_phone", "")
+        org_email  = detail.get("org_email") or item.get("org_email", "")
 
         org_info = {
-            "name":    org_name,
-            "address": org_address,
-            "phone":   org_phone,
-            "email":   org_email,
-            "hours":   "",
+            "name": org_name, "address": org_address,
+            "phone": org_phone, "email": org_email, "hours": "",
         }
-
-        listing_url = source_url
 
         profile = f"""
 Name: {name}
@@ -286,7 +361,7 @@ Email: {org_email}
 
         pets.append({
             "url":         source_url,
-            "listing_url": listing_url,
+            "listing_url": source_url,
             "profile":     profile,
             "photos":      [p for p in photos if p],
             "animal_type": species.lower(),
