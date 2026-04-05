@@ -230,7 +230,7 @@ function ReviewPage({ config, token, onApprove, onUnapprove, approvedSections, o
       const fileRes = await fetch(fileUrl, { headers: ghHeaders });
       if (!fileRes.ok) throw new Error("Could not fetch data file from gh-pages");
       const fileInfo = await fileRes.json();
-      const rows = JSON.parse(atob(fileInfo.content));
+      const rows = JSON.parse(atob(fileInfo.content.replace(/\n/g, "")));
 
       // 2. Reset statuses and default_winner for this newsletter to pending
       let changed = 0;
