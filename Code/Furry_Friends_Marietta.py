@@ -39,8 +39,82 @@ CLAUDE_API_KEY    = os.environ["CLAUDE_API_KEY"]
 APIFY_API_KEY     = os.environ["APIFY_API_KEY"]
 SKILL_PROMPT_PATH = Path(__file__).parent.parent / "Skills" / "newsletter-pet-adoption-skill_auto.md"
 
-APIFY_ACTOR_ID    = "easyapi~petfinder-pet-listings-scraper"
+APIFY_ACTOR_ID    = "apify~web-scraper"
 APIFY_TIMEOUT     = 300  # seconds to wait for scraper run
+
+# pageFunction runs inside the Apify headless browser on the Petfinder page.
+# Petfinder is a Next.js app — pet data is embedded in __NEXT_DATA__ JSON.
+PETFINDER_PAGE_FUNCTION = """
+async function pageFunction(context) {
+    const { page, request, log } = context;
+
+    // Wait for page to fully render
+    await page.waitForTimeout(5000);
+
+    // Try __NEXT_DATA__ first (Next.js embedded data)
+    const nextData = await page.evaluate(() => {
+        const el = document.querySelector('script#__NEXT_DATA__');
+        if (el) {
+            try { return JSON.parse(el.textContent); } catch(e) { return null; }
+        }
+        return null;
+    });
+
+    if (nextData) {
+        log.info('Found __NEXT_DATA__, extracting animals...');
+        // Navigate the Next.js data structure to find animal results
+        const pageProps = nextData.props?.pageProps || {};
+        const searchData = pageProps.searchData || pageProps.initialState?.search || {};
+        const animals = searchData.animals || searchData.result?.animals || pageProps.animals || [];
+
+        if (animals.length > 0) {
+            log.info(`Found ${animals.length} animals in __NEXT_DATA__`);
+            return animals.map(a => ({
+                name: a.name || '',
+                url: a.url ? `https://www.petfinder.com${a.url}` : '',
+                species: a.species || a.type || '',
+                breed: a.breeds?.primary || a.breed || '',
+                age: a.age || '',
+                gender: a.gender || a.sex || '',
+                size: a.size || '',
+                description: a.description || '',
+                photos: (a.photos || a.primary_photo_cropped ? [a.primary_photo_cropped] : []).concat(a.photos || []).filter(Boolean).map(p => typeof p === 'string' ? p : (p.large || p.full || p.medium || p.small || '')).filter(Boolean),
+                organization: a.organization || a.contact || {},
+                status: a.status || '',
+            }));
+        }
+    }
+
+    // Fallback: scrape the DOM directly
+    log.info('Falling back to DOM scraping...');
+    await page.waitForTimeout(3000);
+
+    const pets = await page.evaluate(() => {
+        const results = [];
+        // Try multiple possible selectors for pet cards
+        const cards = document.querySelectorAll('[data-test="Pet_Card"], .petCard, article[class*="pet"], [class*="AnimalCard"], a[href*="/cat/"], a[href*="/dog/"]');
+        cards.forEach(card => {
+            const link = card.tagName === 'A' ? card : card.querySelector('a[href*="/cat/"], a[href*="/dog/"]');
+            const nameEl = card.querySelector('[data-test="Pet_Card_Name"], h2, h3, [class*="name"], [class*="Name"]');
+            const breedEl = card.querySelector('[data-test="Pet_Card_Breed"], [class*="breed"], [class*="Breed"]');
+            const imgEl = card.querySelector('img');
+
+            if (link || nameEl) {
+                results.push({
+                    name: nameEl ? nameEl.textContent.trim() : '',
+                    url: link ? (link.href.startsWith('http') ? link.href : 'https://www.petfinder.com' + link.getAttribute('href')) : '',
+                    breed: breedEl ? breedEl.textContent.trim() : '',
+                    photo: imgEl ? (imgEl.src || imgEl.dataset.src || '') : '',
+                });
+            }
+        });
+        return results;
+    });
+
+    log.info(`DOM scraping found ${pets.length} pet cards`);
+    return pets;
+}
+"""
 
 
 # ---------------------------------------------------------------------------
@@ -63,13 +137,15 @@ approved_urls = get_approved_pet_urls()
 # ---------------------------------------------------------------------------
 
 def run_apify_actor(search_url: str, max_items: int = 20) -> list[dict]:
-    """Run the Petfinder scraper on Apify and return results."""
+    """Run apify/web-scraper with a custom pageFunction to scrape Petfinder."""
     api_url = f"https://api.apify.com/v2/acts/{APIFY_ACTOR_ID}/runs?token={APIFY_API_KEY}&waitForFinish={APIFY_TIMEOUT}"
     payload = {
-        "searchUrls": [search_url],
-        "maxItems": max_items,
+        "startUrls": [{"url": search_url}],
+        "pageFunction": PETFINDER_PAGE_FUNCTION,
+        "proxyConfiguration": {"useApifyProxy": True},
+        "waitUntil": "networkidle2",
     }
-    print(f"  Starting Apify run for: {search_url}")
+    print(f"  Starting Apify web-scraper for: {search_url}")
     res = requests.post(api_url, json=payload, timeout=APIFY_TIMEOUT + 30)
     res.raise_for_status()
     run_data = res.json().get("data", {})
@@ -77,12 +153,12 @@ def run_apify_actor(search_url: str, max_items: int = 20) -> list[dict]:
     dataset_id = run_data.get("defaultDatasetId")
 
     if run_status != "SUCCEEDED":
-        # Poll until done
         run_id = run_data.get("id")
+        print(f"  Run {run_id} status: {run_status}, polling...")
         for _ in range(60):
             time.sleep(5)
             check = requests.get(
-                f"https://api.apify.com/v2/acts/{APIFY_ACTOR_ID}/runs/{run_id}?token={APIFY_API_KEY}",
+                f"https://api.apify.com/v2/actor-runs/{run_id}?token={APIFY_API_KEY}",
                 timeout=30,
             ).json().get("data", {})
             run_status = check.get("status")
@@ -97,8 +173,20 @@ def run_apify_actor(search_url: str, max_items: int = 20) -> list[dict]:
     items_url = f"https://api.apify.com/v2/datasets/{dataset_id}/items?token={APIFY_API_KEY}&format=json"
     items_res = requests.get(items_url, timeout=60)
     items_res.raise_for_status()
-    items = items_res.json()
-    print(f"  Apify returned {len(items)} items")
+    raw = items_res.json()
+
+    # web-scraper wraps pageFunction return in a list of objects with a "data" key
+    # or returns the array directly — flatten either way
+    items = []
+    for entry in raw:
+        if isinstance(entry, dict) and isinstance(entry.get("data"), list):
+            items.extend(entry["data"])
+        elif isinstance(entry, dict) and entry.get("name"):
+            items.append(entry)
+        elif isinstance(entry, list):
+            items.extend(entry)
+
+    print(f"  Apify returned {len(items)} pet items")
     return items
 
 
