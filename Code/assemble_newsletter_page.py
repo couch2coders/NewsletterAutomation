@@ -87,6 +87,90 @@ def notion_clear_page(page_id: str) -> None:
         )
 
 
+def notion_get_blocks(page_id: str) -> list[dict]:
+    """Get all child blocks of a page."""
+    blocks = []
+    has_more = True
+    cursor = None
+    while has_more:
+        url = f"https://api.notion.com/v1/blocks/{page_id}/children?page_size=100"
+        if cursor:
+            url += f"&start_cursor={cursor}"
+        r = requests.get(url, headers=HEADERS, timeout=30)
+        r.raise_for_status()
+        data = r.json()
+        blocks += data.get("results", [])
+        has_more = data.get("has_more", False)
+        cursor = data.get("next_cursor")
+    return blocks
+
+
+def find_section_blocks(blocks: list[dict], heading_text: str) -> tuple[list[str], str | None]:
+    """Find block IDs between a heading and the next heading/divider.
+    Returns (block_ids_to_delete, heading_block_id)."""
+    found_heading = False
+    heading_id = None
+    section_block_ids = []
+
+    for block in blocks:
+        block_type = block.get("type", "")
+
+        # Check if this is the target heading
+        if not found_heading:
+            if block_type.startswith("heading_"):
+                rich_text = block.get(block_type, {}).get("rich_text", [])
+                text = "".join(t.get("text", {}).get("content", "") for t in rich_text)
+                if heading_text.lower() in text.lower():
+                    found_heading = True
+                    heading_id = block["id"]
+                    continue
+        else:
+            # Stop at the next heading or divider
+            if block_type.startswith("heading_") or block_type == "divider":
+                break
+            section_block_ids.append(block["id"])
+
+    return section_block_ids, heading_id
+
+
+def update_section(page_id: str, heading_text: str, new_blocks: list[dict]) -> bool:
+    """Find a section by heading, clear its content, and insert new blocks."""
+    blocks = notion_get_blocks(page_id)
+    section_ids, heading_id = find_section_blocks(blocks, heading_text)
+
+    if not heading_id:
+        print(f"  Could not find heading containing '{heading_text}'")
+        return False
+
+    # Delete existing content in the section
+    for block_id in section_ids:
+        requests.delete(f"https://api.notion.com/v1/blocks/{block_id}", headers=HEADERS, timeout=30)
+
+    # Insert new content after the heading
+    if new_blocks:
+        r = requests.patch(
+            f"https://api.notion.com/v1/blocks/{heading_id}/children" if False else
+            f"https://api.notion.com/v1/blocks/{page_id}/children",
+            headers=HEADERS,
+            json={"children": new_blocks, "after": heading_id},
+            timeout=30,
+        )
+        if not r.ok:
+            # Try appending after heading using the after parameter
+            r = requests.patch(
+                f"https://api.notion.com/v1/blocks/{page_id}/children",
+                headers=HEADERS,
+                json={"children": new_blocks, "after": heading_id},
+                timeout=30,
+            )
+        if not r.ok:
+            print(f"  Failed to insert blocks: {r.text[:300]}")
+            return False
+
+    print(f"  ✓ Updated '{heading_text}' section ({len(new_blocks)} blocks)")
+    return True
+
+
 def notion_append_blocks(page_id: str, blocks: list[dict]) -> None:
     """Append blocks to a page. Notion limits to 100 blocks per call."""
     for i in range(0, len(blocks), 100):
@@ -168,7 +252,7 @@ def get_approved_pet(newsletter_name: str) -> dict | None:
     try:
         pages = query_database(NOTION_PETS_DB_ID, filters={
             "and": [
-                {"property": "Status", "select": {"equals": "approved"}},
+                {"property": "Status", "status": {"equals": "approved"}},
                 {"property": "Newsletter", "select": {"equals": newsletter_name}},
             ]
         })
@@ -192,7 +276,7 @@ def get_restaurants(newsletter_name: str) -> list[dict]:
         pages = query_database(NOTION_RESTAURANTS_DB_ID, filters={
             "and": [
                 {"property": "Newsletter", "select": {"equals": newsletter_name}},
-                {"property": "Status", "select": {"does_not_equal": "pending"}},
+                {"property": "Status", "status": {"does_not_equal": "pending"}},
             ]
         })
     except Exception:
