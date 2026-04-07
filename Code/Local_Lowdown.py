@@ -19,7 +19,7 @@ import requests
 import anthropic
 
 sys.path.append(os.path.dirname(__file__))
-from notion_helper import HEADERS as NOTION_HEADERS
+from notion_helper import HEADERS as NOTION_HEADERS, save_lowdown_to_notion
 
 NOTION_API_KEY = os.environ["NOTION_API_KEY"]
 
@@ -61,6 +61,27 @@ def load_skill_prompt() -> str:
 # ---------------------------------------------------------------------------
 # 3. SCRAPE GOOGLE NEWS VIA APIFY
 # ---------------------------------------------------------------------------
+def resolve_google_news_url(url: str) -> str:
+    """Resolve Google News redirect URLs to actual article URLs."""
+    if "news.google.com" not in url:
+        return url
+    try:
+        # Follow the redirect without downloading the full page
+        r = requests.head(url, allow_redirects=True, timeout=10)
+        final_url = r.url
+        # Skip if it still points to Google
+        if "news.google.com" not in final_url and "google.com/rss" not in final_url:
+            return final_url
+        # Try GET as fallback (some redirects need it)
+        r = requests.get(url, allow_redirects=True, timeout=10, stream=True)
+        r.close()
+        if "news.google.com" not in r.url:
+            return r.url
+    except Exception:
+        pass
+    return url  # Return original if resolution fails
+
+
 def fetch_news_apify(search_terms: list[str]) -> list[dict]:
     """Fetch recent news articles from Google News via Apify."""
     headers = {
@@ -94,6 +115,11 @@ def fetch_news_apify(search_terms: list[str]) -> list[dict]:
 
         for item in items:
             url = item.get("url") or item.get("link") or ""
+            if not url or url in seen_urls:
+                continue
+
+            # Resolve Google News redirect URLs to actual article URLs
+            url = resolve_google_news_url(url)
             if not url or url in seen_urls:
                 continue
             seen_urls.add(url)
@@ -262,7 +288,11 @@ def paragraph_block(text: str, bold: bool = False) -> dict:
 
 
 def save_results(result: dict, newsletter_name: str) -> None:
-    """Write Local Lowdown stories into the Current Edition Notion page."""
+    """Save to Notion database and write into the Current Edition page."""
+    # Save to database (persists across assembler rebuilds)
+    save_lowdown_to_notion(result, newsletter_name)
+
+    # Write to Current Edition page
     display_name = newsletter_name.replace("_", " ")
     page_title = f"{display_name} — Current Edition"
 

@@ -23,6 +23,7 @@ sys.path.append(os.path.dirname(__file__))
 NOTION_API_KEY           = os.environ["NOTION_API_KEY"]
 NOTION_PETS_DB_ID        = os.environ["NOTION_PETS_DB_ID"]
 NOTION_RESTAURANTS_DB_ID = os.environ["NOTION_RESTAURANTS_DB_ID"]
+NOTION_LOWDOWN_DB_ID     = os.environ.get("NOTION_LOWDOWN_DB_ID", "")
 NOTION_PARENT_PAGE_ID    = os.environ["NOTION_PARENT_PAGE_ID"]
 
 HEADERS = {
@@ -297,6 +298,31 @@ def get_restaurants(newsletter_name: str) -> list[dict]:
     return results
 
 
+def get_latest_lowdown(newsletter_name: str) -> str | None:
+    """Get the most recent Local Lowdown section text from the database."""
+    if not NOTION_LOWDOWN_DB_ID:
+        return None
+    try:
+        pages = query_database(NOTION_LOWDOWN_DB_ID, filters={
+            "property": "Newsletter",
+            "select":   {"equals": newsletter_name}
+        })
+    except Exception:
+        return None
+    if not pages:
+        return None
+    # Sort by date descending to get the latest
+    pages.sort(
+        key=lambda p: p["properties"].get("Date Generated", {}).get("date", {}).get("start", ""),
+        reverse=True
+    )
+    props = pages[0]["properties"]
+    section_text = props.get("Full Section", {}).get("rich_text", [])
+    if section_text:
+        return section_text[0].get("text", {}).get("content", "")
+    return None
+
+
 # ---------------------------------------------------------------------------
 # PAGE ASSEMBLER
 # ---------------------------------------------------------------------------
@@ -334,9 +360,23 @@ def build_newsletter_blocks(newsletter_name: str) -> list[dict]:
     blocks.append(callout_block("Not yet automated. Write or paste the featured event here.", emoji="✏️"))
     blocks.append(divider_block())
 
-    # 5. Local Lowdown
+    # 5. Local Lowdown (automated)
     blocks.append(heading_block("🗞️ Local Lowdown"))
-    blocks.append(callout_block("Not yet automated. Write or paste the Local Lowdown section here.", emoji="✏️"))
+    lowdown_text = get_latest_lowdown(newsletter_name)
+    if lowdown_text:
+        # Split into paragraphs and add as blocks
+        for para in lowdown_text.split("\n"):
+            para = para.strip()
+            if not para:
+                continue
+            if para.startswith("### "):
+                blocks.append(paragraph_block(para.replace("### ", ""), bold=True))
+            elif para.startswith("More: "):
+                blocks.append(paragraph_block(para))
+            else:
+                blocks.append(paragraph_block(para))
+    else:
+        blocks.append(callout_block("No Local Lowdown generated yet. Run the Local Lowdown pipeline.", emoji="⏳"))
     blocks.append(divider_block())
 
     # 6. Pet Adoption (automated)
