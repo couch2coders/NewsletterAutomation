@@ -251,13 +251,17 @@ def query_database(db_id: str, filters: dict = None) -> list:
 def get_approved_pet(newsletter_name: str) -> dict | None:
     """Get the approved pet for a newsletter."""
     try:
+        # Query approved pets, then filter by newsletter in Python
+        # (avoids compound filter issues with mixed property types)
         pages = query_database(NOTION_PETS_DB_ID, filters={
-            "and": [
-                {"property": "Status", "status": {"equals": "approved"}},
-                {"property": "Newsletter", "select": {"equals": newsletter_name}},
-            ]
+            "property": "Status",
+            "status": {"equals": "approved"}
         })
-        print(f"  Pet query returned {len(pages)} results for {newsletter_name}")
+        print(f"  Pet query returned {len(pages)} total approved pets")
+        # Filter to this newsletter
+        pages = [p for p in pages if
+                 (p["properties"].get("Newsletter", {}).get("select") or {}).get("name") == newsletter_name]
+        print(f"  {len(pages)} approved pets for {newsletter_name}")
     except Exception as e:
         print(f"  Pet query FAILED: {e}")
         return None
@@ -277,18 +281,19 @@ def get_approved_pet(newsletter_name: str) -> dict | None:
 def get_restaurants(newsletter_name: str) -> list[dict]:
     """Get Tier 1 and Tier 2 restaurants for a newsletter."""
     try:
-        pages = query_database(NOTION_RESTAURANTS_DB_ID, filters={
-            "and": [
-                {"property": "Newsletter", "select": {"equals": newsletter_name}},
-                {"property": "Status", "status": {"does_not_equal": "pending"}},
-            ]
-        })
+        pages = query_database(NOTION_RESTAURANTS_DB_ID)
+        # Filter in Python to avoid compound filter issues
+        pages = [p for p in pages if
+                 (p["properties"].get("Newsletter", {}).get("select") or {}).get("name") == newsletter_name]
     except Exception:
         return []
     results = []
     for page in pages:
         props = page["properties"]
-        status = props.get("Status", {}).get("select", {}).get("name", "")
+        status_prop = props.get("Status", {})
+        status = (status_prop.get("select") or status_prop.get("status") or {}).get("name", "")
+        if status == "pending" or not status:
+            continue
         results.append({
             "name":   props.get("Name", {}).get("title", [{}])[0].get("text", {}).get("content", ""),
             "blurb":  props.get("Blurb", {}).get("rich_text", [{}])[0].get("text", {}).get("content", "") if props.get("Blurb", {}).get("rich_text") else "",
