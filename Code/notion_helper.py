@@ -521,11 +521,48 @@ def cleanup_old_restaurants_notion() -> None:
 # ---------------------------------------------------------------------------
 # LOCAL LOWDOWN HELPERS
 # ---------------------------------------------------------------------------
+_lowdown_schema_setup = False
+
+def _ensure_lowdown_schema():
+    """Create properties on the Local Lowdown database if needed (runs once)."""
+    global _lowdown_schema_setup
+    if _lowdown_schema_setup:
+        return
+    props = {
+        "Name":            {"title": {}},
+        "Newsletter":      {"select": {"options": [
+            {"name": "East_Cobb_Connect", "color": "purple"},
+            {"name": "Perimeter_Post",    "color": "pink"}
+        ]}},
+        "Date Generated":  {"date": {}},
+        "Status":          {"select": {"options": [
+            {"name": "pending",  "color": "yellow"},
+            {"name": "approved", "color": "green"}
+        ]}},
+        "Section Header":  {"rich_text": {}},
+        "Stories Count":   {"number": {"format": "number"}},
+        "Full Section":    {"rich_text": {}},
+    }
+    r = requests.patch(
+        f"https://api.notion.com/v1/databases/{NOTION_LOWDOWN_DB_ID}",
+        headers=HEADERS,
+        json={"properties": props},
+        timeout=30,
+    )
+    if r.ok:
+        print("  ✓ Local Lowdown database schema ready")
+    else:
+        print(f"  ✗ Schema setup error: {r.text[:300]}")
+    _lowdown_schema_setup = True
+
+
 def save_lowdown_to_notion(result: dict, newsletter_name: str) -> None:
     """Save the Local Lowdown section to Notion."""
     if not NOTION_LOWDOWN_DB_ID:
         print("  No NOTION_LOWDOWN_DB_ID set, skipping Notion save")
         return
+
+    _ensure_lowdown_schema()
 
     stories = result.get("stories", [])
     section_header = result.get("section_header", "")

@@ -289,12 +289,19 @@ def get_approved_pet(newsletter_name: str) -> dict | None:
         print(f"  No approved pet found for {newsletter_name}")
         return None
     props = pages[0]["properties"]
+    def _rt(key):
+        rt = props.get(key, {}).get("rich_text", [])
+        return rt[0].get("text", {}).get("content", "") if rt else ""
     return {
-        "name":     props.get("Name", {}).get("title", [{}])[0].get("text", {}).get("content", ""),
-        "blurb":    props.get("Blurb", {}).get("rich_text", [{}])[0].get("text", {}).get("content", "") if props.get("Blurb", {}).get("rich_text") else "",
-        "shelter":  props.get("Shelter", {}).get("rich_text", [{}])[0].get("text", {}).get("content", "") if props.get("Shelter", {}).get("rich_text") else "",
-        "photo":    props.get("Photo URL", {}).get("url", ""),
-        "url":      props.get("Source URL", {}).get("url", "") or props.get("Listing URL", {}).get("url", ""),
+        "name":            props.get("Name", {}).get("title", [{}])[0].get("text", {}).get("content", ""),
+        "blurb":           _rt("Blurb"),
+        "shelter":         _rt("Shelter"),
+        "shelter_address": _rt("Shelter Address"),
+        "shelter_phone":   _rt("Shelter Phone"),
+        "shelter_email":   _rt("Shelter Email"),
+        "shelter_hours":   _rt("Shelter Hours"),
+        "photo":           props.get("Photo URL", {}).get("url", ""),
+        "url":             props.get("Source URL", {}).get("url", "") or props.get("Listing URL", {}).get("url", ""),
     }
 
 
@@ -413,8 +420,19 @@ def build_newsletter_blocks(newsletter_name: str) -> list[dict]:
     if pet and pet.get("blurb"):
         blocks.append(paragraph_block(pet["name"], bold=True))
         blocks.append(paragraph_block(pet["blurb"]))
+        # Shelter info block
+        shelter_lines = []
         if pet.get("shelter"):
-            blocks.append(paragraph_block(f"Shelter: {pet['shelter']}"))
+            shelter_lines.append(pet["shelter"])
+        if pet.get("shelter_address"):
+            shelter_lines.append(pet["shelter_address"])
+        if pet.get("shelter_phone") or pet.get("shelter_email"):
+            contact = " | ".join(filter(None, [pet.get("shelter_phone"), pet.get("shelter_email")]))
+            shelter_lines.append(contact)
+        if pet.get("shelter_hours"):
+            shelter_lines.append(pet["shelter_hours"])
+        if shelter_lines:
+            blocks.append(paragraph_block("\n".join(shelter_lines)))
         if pet.get("url"):
             blocks.append(paragraph_block(f"Link: {pet['url']}"))
         if pet.get("photo"):
