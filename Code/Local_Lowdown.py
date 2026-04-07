@@ -19,7 +19,9 @@ import requests
 import anthropic
 
 sys.path.append(os.path.dirname(__file__))
-from notion_helper import save_lowdown_to_notion
+from notion_helper import HEADERS as NOTION_HEADERS
+
+NOTION_API_KEY = os.environ["NOTION_API_KEY"]
 
 # ---------------------------------------------------------------------------
 # 1. ENVIRONMENT & CONFIG
