@@ -251,16 +251,36 @@ def query_database(db_id: str, filters: dict = None) -> list:
 def get_approved_pet(newsletter_name: str) -> dict | None:
     """Get the approved pet for a newsletter."""
     try:
-        # Query approved pets, then filter by newsletter in Python
-        # (avoids compound filter issues with mixed property types)
-        pages = query_database(NOTION_PETS_DB_ID, filters={
-            "property": "Status",
-            "status": {"equals": "approved"}
-        })
-        print(f"  Pet query returned {len(pages)} total approved pets")
-        # Filter to this newsletter
-        pages = [p for p in pages if
-                 (p["properties"].get("Newsletter", {}).get("select") or {}).get("name") == newsletter_name]
+        # Try "status" type filter first, fall back to "select" type
+        pages = None
+        for filter_type in ["status", "select"]:
+            try:
+                pages = query_database(NOTION_PETS_DB_ID, filters={
+                    "property": "Status",
+                    filter_type: {"equals": "approved"}
+                })
+                print(f"  Pet query worked with '{filter_type}' filter, returned {len(pages)} results")
+                break
+            except Exception:
+                print(f"  Pet '{filter_type}' filter failed, trying next...")
+                continue
+        if pages is None:
+            # Last resort: no filter, check status in Python
+            print(f"  Trying unfiltered query...")
+            pages = query_database(NOTION_PETS_DB_ID)
+            print(f"  Unfiltered query returned {len(pages)} total pets")
+
+        # Filter to approved pets for this newsletter in Python
+        filtered = []
+        for p in pages:
+            props = p["properties"]
+            status_prop = props.get("Status", {})
+            status_name = (status_prop.get("select") or status_prop.get("status") or {}).get("name", "")
+            nl_prop = props.get("Newsletter", {})
+            nl_name = (nl_prop.get("select") or {}).get("name", "")
+            if status_name == "approved" and nl_name == newsletter_name:
+                filtered.append(p)
+        pages = filtered
         print(f"  {len(pages)} approved pets for {newsletter_name}")
     except Exception as e:
         print(f"  Pet query FAILED: {e}")
