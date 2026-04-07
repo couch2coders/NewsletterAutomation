@@ -74,18 +74,22 @@ def notion_create_page(title: str, parent_id: str) -> str:
 
 def notion_clear_page(page_id: str) -> None:
     """Delete all blocks from a page (to overwrite content)."""
-    r = requests.get(
-        f"https://api.notion.com/v1/blocks/{page_id}/children?page_size=100",
-        headers=HEADERS,
-        timeout=30,
-    )
-    r.raise_for_status()
-    for block in r.json().get("results", []):
-        requests.delete(
-            f"https://api.notion.com/v1/blocks/{block['id']}",
+    while True:
+        r = requests.get(
+            f"https://api.notion.com/v1/blocks/{page_id}/children?page_size=100",
             headers=HEADERS,
             timeout=30,
         )
+        r.raise_for_status()
+        blocks = r.json().get("results", [])
+        if not blocks:
+            break
+        for block in blocks:
+            requests.delete(
+                f"https://api.notion.com/v1/blocks/{block['id']}",
+                headers=HEADERS,
+                timeout=30,
+            )
 
 
 def notion_get_blocks(page_id: str) -> list[dict]:

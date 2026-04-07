@@ -288,44 +288,11 @@ def paragraph_block(text: str, bold: bool = False) -> dict:
 
 
 def save_results(result: dict, newsletter_name: str) -> None:
-    """Save to Notion database and write into the Current Edition page."""
-    # Save to database (persists across assembler rebuilds)
+    """Save to Notion database. The assembler handles writing to the Current Edition page."""
+    # Save to database (assembler reads from here)
     save_lowdown_to_notion(result, newsletter_name)
 
-    # Write to Current Edition page
-    display_name = newsletter_name.replace("_", " ")
-    page_title = f"{display_name} — Current Edition"
-
-    page_id = notion_search_page(page_title)
-    if not page_id:
-        print(f"  Could not find Notion page: {page_title}")
-        return
-
-    stories = result.get("stories", [])
-    blocks = []
-    for story in stories:
-        emoji = story.get("emoji", "")
-        headline = story.get("headline", "")
-        body = story.get("body", "").replace("\\n\\n", "\n\n").replace("\\n", "\n")
-        sources = story.get("source_urls", [])
-        source_links = " | ".join(f"[{s['label']}]({s['url']})" for s in sources)
-
-        blocks.append(paragraph_block(f"{emoji} {headline}", bold=True))
-        # Split body into paragraphs (Notion has 2000 char limit per block)
-        for para in body.split("\n\n"):
-            para = para.strip()
-            if para:
-                blocks.append(paragraph_block(para[:2000]))
-        if source_links:
-            blocks.append(paragraph_block(f"More: {source_links}"))
-        blocks.append(paragraph_block(""))  # spacer
-
-    if find_section_and_replace(page_id, "Local Lowdown", blocks):
-        print(f"  ✓ Wrote {len(stories)} stories to '{page_title}' → Local Lowdown section")
-    else:
-        print(f"  ✗ Failed to update Local Lowdown section")
-
-    # Also save local files
+    # Save local files
     output_dir = Path(__file__).parent / "output"
     output_dir.mkdir(exist_ok=True)
     json_file = output_dir / f"lowdown_{newsletter_name}_{datetime.today().strftime('%Y%m%d')}.json"
