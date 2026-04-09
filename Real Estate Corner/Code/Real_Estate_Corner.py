@@ -484,7 +484,37 @@ if __name__ == "__main__":
         print(f"\n  Generating blurbs for {len(tier_listings)} listings...")
         results = generate_blurbs(tier_listings, skill_prompt, newsletter["display"])
 
-        # Save
+        # Generate GIF from the tier photos
+        print(f"\n  Creating GIF from {len(results)} listing photos...")
+        gif_urls = []
+        gif_labels = []
+        for r in results:
+            photo = r.get("photo_url", "")
+            if photo:
+                gif_urls.append(photo)
+                price = r.get("price", 0)
+                tier = r.get("tier", "")
+                beds = r.get("beds", 0)
+                baths = r.get("baths", 0)
+                tier_emoji = {"Starter": "🏠", "Sweet Spot": "🏡", "Showcase": "🏰"}.get(tier, "🏠")
+                gif_labels.append(f"{tier_emoji} {tier}  •  ${price:,}  •  {beds}bd/{baths}ba")
+
+        gif_path = None
+        if gif_urls:
+            try:
+                sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', 'NewsletterCreation', 'Code'))
+                from gif_maker import create_gif_from_urls
+                gif_bytes = create_gif_from_urls(gif_urls, labels=gif_labels)
+                if gif_bytes:
+                    output_dir = Path(__file__).parent / "output"
+                    output_dir.mkdir(exist_ok=True)
+                    gif_path = output_dir / f"re_{newsletter['name']}_{datetime.today().strftime('%Y%m%d')}.gif"
+                    gif_path.write_bytes(gif_bytes)
+                    print(f"  ✓ GIF saved to {gif_path} ({len(gif_bytes):,} bytes)")
+            except Exception as e:
+                print(f"  ✗ GIF creation failed: {e}")
+
+        # Save to Notion
         save_real_estate_to_notion(results, newsletter["name"])
 
     print(f"\nAll newsletters complete.")
