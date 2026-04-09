@@ -271,6 +271,51 @@ Listings:
 # ---------------------------------------------------------------------------
 NOTION_RE_DB_ID = os.environ.get("NOTION_RE_DB_ID", "")
 
+
+def get_used_listing_urls(newsletter_name: str) -> set:
+    """Get listing URLs already used for this newsletter (to prevent repeats)."""
+    if not NOTION_RE_DB_ID:
+        return set()
+    try:
+        pages = query_database(NOTION_RE_DB_ID)
+        urls = set()
+        for page in pages:
+            nl = (page["properties"].get("Newsletter", {}).get("select") or {}).get("name", "")
+            if nl != newsletter_name:
+                continue
+            url = page["properties"].get("Listing URL", {}).get("url", "")
+            if url:
+                urls.add(url)
+        print(f"  Loaded {len(urls)} previously used listing URLs to exclude")
+        return urls
+    except Exception:
+        return set()
+
+
+def cleanup_old_re_listings() -> None:
+    """Delete real estate entries older than 8 weeks."""
+    if not NOTION_RE_DB_ID:
+        return
+    from notion_helper import archive_page
+    from datetime import timedelta
+    cutoff = (datetime.today() - timedelta(weeks=8)).strftime("%Y-%m-%d")
+    try:
+        pages = query_database(NOTION_RE_DB_ID, filters={
+            "property": "Date Generated",
+            "date": {"before": cutoff}
+        })
+    except Exception:
+        pages = []
+    count = 0
+    for page in pages:
+        name = page["properties"].get("Name", {}).get("title", [{}])[0].get("text", {}).get("content", "")
+        archive_page(page["id"])
+        print(f"  Archived: {name}")
+        count += 1
+    if count:
+        print(f"  Archived {count} real estate listings older than 8 weeks")
+
+
 def save_real_estate_to_notion(results: list[dict], newsletter_name: str) -> None:
     """Save real estate listings to Notion database."""
     if not NOTION_RE_DB_ID:
@@ -305,16 +350,31 @@ if __name__ == "__main__":
     print(f"Starting Real Estate Corner — {datetime.today().strftime('%Y-%m-%d')}")
     skill_prompt = load_skill_prompt()
 
+    # Cleanup old listings first
+    print("\nCleaning up old listings...")
+    cleanup_old_re_listings()
+
     for newsletter in NEWSLETTERS:
         print(f"\n{'='*60}")
         print(f"Processing: {newsletter['name']} ({newsletter['display']})")
         print(f"{'='*60}")
+
+        # Load previously used listings to exclude
+        excluded_urls = get_used_listing_urls(newsletter["name"])
 
         # Fetch all listings once, then filter per tier
         all_listings = fetch_listings(location=newsletter["location"], limit=20)
         if not all_listings:
             print(f"  No listings found for {newsletter['name']}. Skipping.")
             continue
+
+        # Remove previously featured listings
+        before_count = len(all_listings)
+        all_listings = [r for r in all_listings if
+                        r.get("href", "") not in excluded_urls and
+                        f"https://www.realtor.com{r.get('href', '')}" not in excluded_urls]
+        if len(all_listings) < before_count:
+            print(f"  Excluded {before_count - len(all_listings)} previously featured listings")
 
         tiers = newsletter["tiers"]
         tier_listings = []
