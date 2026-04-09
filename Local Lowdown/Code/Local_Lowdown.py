@@ -33,6 +33,17 @@ SKILL_PROMPT_PATH = Path(__file__).parent.parent.parent / "Skills" / "newsletter
 
 MAX_ARTICLES = 15
 
+# Topics to exclude — keep the newsletter PG and community-focused
+EXCLUDED_KEYWORDS = {
+    "murder", "homicide", "killed", "stabbed", "shooting", "shot dead",
+    "manslaughter", "assault", "rape", "sexual assault", "domestic violence",
+    "arson", "robbery", "carjacking", "kidnapping", "abduction",
+    "skeletal remains", "body found", "death investigation",
+    "drug bust", "drug trafficking", "overdose",
+    "trump", "biden", "desantis", "GOP", "democrat", "republican",
+    "partisan", "impeach", "indictment", "arraign",
+}
+
 NEWSLETTERS = [
     {
         "name":         "East_Cobb_Connect",
@@ -95,6 +106,16 @@ def fetch_news_brave(search_terms: list[str]) -> list[dict]:
                 url = item.get("url", "")
                 if not url or url in seen_urls:
                     continue
+
+                # Skip crime, violence, and partisan politics
+                title = item.get("title", "")
+                desc = item.get("description", "")
+                text_to_check = f"{title} {desc}".lower()
+                matched_keyword = next((kw for kw in EXCLUDED_KEYWORDS if kw in text_to_check), None)
+                if matched_keyword:
+                    print(f"    ✗ Skipping excluded topic ({matched_keyword}): {title[:60]}")
+                    continue
+
                 seen_urls.add(url)
 
                 all_articles.append({

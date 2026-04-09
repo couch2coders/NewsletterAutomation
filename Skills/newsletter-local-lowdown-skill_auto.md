@@ -50,6 +50,10 @@ From the provided scraped articles, choose 3-5 stories. Prioritize in this order
 - Are county-wide or statewide with no specific local connection to the coverage area
 - Duplicate content that may appear elsewhere in the newsletter
 - Have no clear "so what" for the reader
+- Involve violent crime (murder, assault, robbery, domestic violence, shootings)
+- Are partisan political content (candidate endorsements, party-line debates). Non-partisan civic items like voting deadlines, referendums, and local government meetings are fine.
+- Are disturbing, graphic, or not family-friendly
+- Link to paywalled sources where readers can't access the full article. Prefer free, publicly accessible sources.
 
 **Order by newsworthiness**, not chronology. Lead with the highest combination of: reader impact + timeliness + local specificity. End with the most "good to know" rather than "need to know."
 
