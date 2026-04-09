@@ -13,6 +13,7 @@ NOTION_API_KEY           = os.environ["NOTION_API_KEY"]
 NOTION_PETS_DB_ID        = os.environ["NOTION_PETS_DB_ID"]
 NOTION_RESTAURANTS_DB_ID = os.environ["NOTION_RESTAURANTS_DB_ID"]
 NOTION_LOWDOWN_DB_ID     = os.environ.get("NOTION_LOWDOWN_DB_ID", "")
+NOTION_RE_DB_ID          = os.environ.get("NOTION_RE_DB_ID", "")
 
 HEADERS = {
     "Authorization":  f"Bearer {NOTION_API_KEY}",
@@ -138,9 +139,9 @@ def setup_notion_databases():
         "Price Level":            {"select": {}},
         "Date Generated":         {"date": {}},
         "Status":                 {"select": {"options": [
-            {"name": "pending",        "color": "yellow"},
-            {"name": "Tier 1 Winner",  "color": "green"},
-            {"name": "Tier 2 Winner",  "color": "blue"}
+            {"name": "pending"},
+            {"name": "Tier 1 Winner"},
+            {"name": "Tier 2 Winner"}
         ]}},
         "Section":                {"select": {"options": [{"name": "restaurant_blurb", "color": "blue"}]}},
         "Newsletter":             {"select": {"options": [
@@ -207,6 +208,45 @@ def setup_notion_databases():
             print("✓ Local Lowdown database schema created")
         else:
             print(f"✗ Local Lowdown schema error: {r.text[:300]}")
+
+    # Real Estate Corner database properties
+    if NOTION_RE_DB_ID:
+        re_properties = {
+            "Name":           {"title": {}},
+            "Tier":           {"select": {"options": [
+                {"name": "Starter"},
+                {"name": "Sweet Spot"},
+                {"name": "Showcase"}
+            ]}},
+            "Price":          {"number": {"format": "dollar"}},
+            "Address":        {"rich_text": {}},
+            "Beds":           {"number": {"format": "number"}},
+            "Baths":          {"number": {"format": "number"}},
+            "Sqft":           {"number": {"format": "number"}},
+            "Headline":       {"rich_text": {}},
+            "Blurb":          {"rich_text": {}},
+            "Photo URL":      {"url": {}},
+            "Listing URL":    {"url": {}},
+            "Newsletter":     {"select": {"options": [
+                {"name": "East_Cobb_Connect"},
+                {"name": "Perimeter_Post"}
+            ]}},
+            "Date Generated": {"date": {}},
+            "Status":         {"select": {"options": [
+                {"name": "approved"},
+                {"name": "pending"}
+            ]}},
+        }
+        r = requests.patch(
+            f"https://api.notion.com/v1/databases/{NOTION_RE_DB_ID}",
+            headers=HEADERS,
+            json={"properties": re_properties},
+            timeout=30
+        )
+        if r.ok:
+            print("✓ Real Estate Corner database schema created")
+        else:
+            print(f"✗ Real Estate schema error: {r.text[:300]}")
 
 # ---------------------------------------------------------------------------
 # PETS HELPERS
