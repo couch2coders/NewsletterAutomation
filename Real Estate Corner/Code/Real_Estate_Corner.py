@@ -33,18 +33,22 @@ NEWSLETTERS = [
         "name":     "East_Cobb_Connect",
         "location": "city:Marietta, GA",
         "display":  "East Cobb",
+        "tiers": [
+            {"name": "Starter",    "label": "🏠 Starter Home", "max_price": 400000, "min_price": 0,       "min_beds": 3, "min_baths": 2, "type_filter": None},
+            {"name": "Sweet Spot", "label": "🏡 Sweet Spot",   "max_price": 700000, "min_price": 400000,  "min_beds": 0, "min_baths": 0, "type_filter": "single_family"},
+            {"name": "Showcase",   "label": "🏰 Showcase",     "max_price": None,   "min_price": 1000000, "min_beds": 0, "min_baths": 0, "type_filter": "single_family"},
+        ],
     },
     {
         "name":     "Perimeter_Post",
         "location": "city:Dunwoody, GA",
         "display":  "Perimeter",
+        "tiers": [
+            {"name": "Starter",    "label": "🏠 Starter Home", "max_price": 400000, "min_price": 0,       "min_beds": 3, "min_baths": 2, "type_filter": None},
+            {"name": "Sweet Spot", "label": "🏡 Sweet Spot",   "max_price": 700000, "min_price": 400000,  "min_beds": 0, "min_baths": 0, "type_filter": "single_family"},
+            {"name": "Showcase",   "label": "🏰 Showcase",     "max_price": None,   "min_price": 1000000, "min_beds": 0, "min_baths": 0, "type_filter": "single_family"},
+        ],
     },
-]
-
-TIERS = [
-    {"name": "Starter",    "label": "🏠 Starter Home",    "max_price": 400000, "min_price": 0,       "min_beds": 3, "min_baths": 2},
-    {"name": "Sweet Spot", "label": "🏡 Sweet Spot",      "max_price": 700000, "min_price": 400000,  "min_beds": 0, "min_baths": 0},
-    {"name": "Showcase",   "label": "🏰 Showcase",        "max_price": None,   "min_price": 1000000, "min_beds": 0, "min_baths": 0},
 ]
 
 # ---------------------------------------------------------------------------
@@ -92,20 +96,37 @@ def fetch_listings(location: str, limit: int = 20) -> list[dict]:
         return []
 
 
+def has_valid_photo(listing: dict) -> bool:
+    """Check if a listing has a real photo (not a placeholder)."""
+    photo = listing.get("primary_photo", {}).get("href", "")
+    if not photo:
+        return False
+    # 'l-f' in URL = placeholder/coming soon, 'l-m' = real photo
+    if "l-f" in photo:
+        return False
+    return True
+
+
 def filter_by_tier(listings: list[dict], min_price: int, max_price: int | None,
-                   min_beds: int = 0, min_baths: int = 0) -> list[dict]:
-    """Filter raw listings by price range and bed/bath minimums."""
+                   min_beds: int = 0, min_baths: int = 0,
+                   type_filter: str | None = None) -> list[dict]:
+    """Filter raw listings by price range, bed/bath minimums, property type, and valid photo."""
     filtered = []
     for r in listings:
         price = r.get("list_price", 0) or 0
         beds = r.get("description", {}).get("beds", 0) or 0
         baths = r.get("description", {}).get("baths", 0) or 0
+        prop_type = r.get("description", {}).get("type", "") or ""
 
         if price < min_price:
             continue
         if max_price and price > max_price:
             continue
         if beds < min_beds or baths < min_baths:
+            continue
+        if type_filter and prop_type != type_filter:
+            continue
+        if not has_valid_photo(r):
             continue
         filtered.append(r)
     return filtered
@@ -126,9 +147,11 @@ def parse_listing(raw: dict) -> dict:
 
     # Get full-size photo (API returns small thumbnails ending in 's.jpg')
     photo = raw.get("primary_photo", {}).get("href", "")
-    if photo:
+    if photo and "l-m" in photo:
         import re
-        photo = re.sub(r's\.jpg$', 'od.jpg', photo)  # od = original dimensions
+        photo = re.sub(r's\.jpg$', 'od.jpg', photo)
+        photo = photo.replace("http://", "https://")
+    elif photo:
         photo = photo.replace("http://", "https://")
 
     return {
@@ -293,51 +316,65 @@ if __name__ == "__main__":
             print(f"  No listings found for {newsletter['name']}. Skipping.")
             continue
 
+        tiers = newsletter["tiers"]
         tier_listings = []
-        used_ids = set()  # Prevent same listing appearing in multiple tiers
+        used_ids = set()
 
-        # Adaptive tier ranges: if starter can't find a hit, expand upward
-        # and shift sweet spot accordingly. If showcase can't find 1M+, shrink down.
-        starter_min = 0
-        starter_max = 400000
-        sweet_min = 400000
-        sweet_max = 700000
-        showcase_min = 1000000
+        # Adaptive tier ranges
         STEP = 100000
-        RANGE_WIDTH = 300000  # sweet spot range stays 300k wide
+        RANGE_WIDTH = 300000
 
-        # --- STARTER: expand upward until we find a 3/2+ ---
+        starter_cfg = tiers[0]
+        sweet_cfg   = tiers[1]
+        showcase_cfg = tiers[2]
+
+        starter_max = starter_cfg["max_price"]
+        sweet_min   = sweet_cfg["min_price"]
+        sweet_max   = sweet_cfg["max_price"]
+        showcase_min = showcase_cfg["min_price"]
+
+        # --- STARTER: expand upward until we find a hit ---
         starter_result = None
-        for attempt in range(6):  # Try up to 600k shift
+        for attempt in range(6):
             cur_max = starter_max + (attempt * STEP)
-            tier_filtered = filter_by_tier(all_listings, starter_min, cur_max,
-                                          min_beds=3, min_baths=2)
+            tier_filtered = filter_by_tier(
+                all_listings, starter_cfg["min_price"], cur_max,
+                min_beds=starter_cfg["min_beds"], min_baths=starter_cfg["min_baths"],
+                type_filter=starter_cfg.get("type_filter"),
+            )
             tier_filtered = [r for r in tier_filtered if r.get("property_id") not in used_ids]
-            target = cur_max // 2  # Midpoint of range
-            starter_result = pick_best_listing(tier_filtered, target_price=target, min_beds=3, min_baths=2)
+            target = cur_max // 2
+            starter_result = pick_best_listing(tier_filtered, target_price=target,
+                                              min_beds=starter_cfg["min_beds"], min_baths=starter_cfg["min_baths"])
             if starter_result:
-                actual_max = cur_max
                 if attempt > 0:
-                    print(f"\n  🏠 Starter Home (expanded to <${cur_max//1000}k to find 3/2+)")
+                    print(f"\n  🏠 Starter Home (expanded to <${cur_max//1000}k)")
                 else:
-                    print(f"\n  🏠 Starter Home (<${starter_max//1000}k, 3+bd/2+ba)")
+                    print(f"\n  🏠 Starter Home (<${starter_max//1000}k)")
+                ptype = starter_cfg.get('type_filter') or 'all types'
+                print(f"    Filter: {ptype} | {starter_cfg['min_beds']}+bd/{starter_cfg['min_baths']}+ba")
                 print(f"    ✓ ${starter_result['price']:,} | {starter_result['address']} | {starter_result['beds']}bd/{starter_result['baths']}ba")
                 starter_result["tier"] = "Starter"
                 starter_result["tier_label"] = "🏠 Starter Home"
                 tier_listings.append(starter_result)
                 used_ids.add(starter_result["property_id"])
-                # Shift sweet spot up by the same delta
                 delta = attempt * STEP
                 sweet_min = sweet_min + delta
                 sweet_max = sweet_min + RANGE_WIDTH
                 break
         if not starter_result:
-            print(f"\n  🏠 Starter Home — no 3/2+ found even at ${starter_max + 5*STEP:,}")
+            print(f"\n  🏠 Starter Home — no listings found")
 
-        # --- SWEET SPOT: use adjusted range, pick closest to midpoint ---
+        # --- SWEET SPOT ---
         sweet_target = (sweet_min + sweet_max) // 2
+        ptype = sweet_cfg.get('type_filter') or 'all types'
         print(f"\n  🏡 Sweet Spot (${sweet_min//1000}k-${sweet_max//1000}k, target ~${sweet_target//1000}k)")
-        tier_filtered = filter_by_tier(all_listings, sweet_min, sweet_max)
+        print(f"    Filter: {ptype}")
+        tier_filtered = filter_by_tier(
+            all_listings, sweet_min, sweet_max,
+            min_beds=sweet_cfg["min_beds"], min_baths=sweet_cfg["min_baths"],
+            type_filter=sweet_cfg.get("type_filter"),
+        )
         tier_filtered = [r for r in tier_filtered if r.get("property_id") not in used_ids]
         print(f"    {len(tier_filtered)} listings in range")
         sweet_result = pick_best_listing(tier_filtered, target_price=sweet_target)
@@ -350,21 +387,26 @@ if __name__ == "__main__":
         else:
             print(f"    ✗ No listings in Sweet Spot range")
 
-        # --- SHOWCASE: shrink down from 1M+ until we find a hit ---
+        # --- SHOWCASE: shrink down until we find a hit ---
         showcase_result = None
-        for attempt in range(4):  # Try down to 700k+
+        ptype = showcase_cfg.get('type_filter') or 'all types'
+        for attempt in range(4):
             cur_min = showcase_min - (attempt * STEP)
             if cur_min < sweet_max:
-                break  # Don't overlap with sweet spot
-            tier_filtered = filter_by_tier(all_listings, cur_min, None)
+                break
+            tier_filtered = filter_by_tier(
+                all_listings, cur_min, None,
+                min_beds=showcase_cfg["min_beds"], min_baths=showcase_cfg["min_baths"],
+                type_filter=showcase_cfg.get("type_filter"),
+            )
             tier_filtered = [r for r in tier_filtered if r.get("property_id") not in used_ids]
-            # Target is the lowest available price in range (showcase = the entry to luxury)
             showcase_result = pick_best_listing(tier_filtered, target_price=cur_min)
             if showcase_result:
                 if attempt > 0:
                     print(f"\n  🏰 Showcase (adjusted to ${cur_min//1000}k+)")
                 else:
                     print(f"\n  🏰 Showcase ($1M+)")
+                print(f"    Filter: {ptype}")
                 print(f"    ✓ ${showcase_result['price']:,} | {showcase_result['address']} | {showcase_result['beds']}bd/{showcase_result['baths']}ba")
                 showcase_result["tier"] = "Showcase"
                 showcase_result["tier_label"] = "🏰 Showcase"
@@ -372,7 +414,7 @@ if __name__ == "__main__":
                 used_ids.add(showcase_result["property_id"])
                 break
         if not showcase_result:
-            print(f"\n  🏰 Showcase — no listings found at ${showcase_min - 3*STEP:,}+")
+            print(f"\n  🏰 Showcase — no listings found")
 
         if not tier_listings:
             print(f"  No listings found for {newsletter['name']}. Skipping.")
