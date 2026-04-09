@@ -33,17 +33,17 @@ SKILL_PROMPT_PATH = Path(__file__).parent.parent.parent / "Skills" / "newsletter
 
 APIFY_NEWS_ACTOR = "automation-lab~google-news-scraper"
 APIFY_TIMEOUT    = 120
-MAX_ARTICLES     = 30  # per query
+MAX_ARTICLES     = 15  # per query — Claude only picks 3-5, no need for more
 
 NEWSLETTERS = [
     {
         "name":         "East_Cobb_Connect",
-        "search_terms": ["East Cobb", "East Cobb GA news", "Cobb County East Cobb"],
+        "search_terms": ["East Cobb GA news"],
         "display_area": "East Cobb",
     },
     {
         "name":         "Perimeter_Post",
-        "search_terms": ["Perimeter Dunwoody news", "Sandy Springs Dunwoody", "Perimeter Atlanta"],
+        "search_terms": ["Dunwoody Sandy Springs news"],
         "display_area": "Perimeter",
     },
 ]
@@ -65,21 +65,47 @@ def resolve_google_news_url(url: str) -> str:
     """Resolve Google News redirect URLs to actual article URLs."""
     if "news.google.com" not in url:
         return url
+
+    import base64
+    from urllib.parse import urlparse, parse_qs
+
+    # Try to extract the real URL from the encoded path
+    # Google News RSS URLs encode the destination in base64 in the path
     try:
-        # Follow the redirect without downloading the full page
+        parsed = urlparse(url)
+        # Extract the base64 portion from the path (after /rss/articles/)
+        path = parsed.path
+        if "/articles/" in path:
+            encoded = path.split("/articles/")[-1].split("?")[0]
+            # Try base64 decoding — the real URL is often embedded
+            for padding in ["", "=", "==", "==="]:
+                try:
+                    decoded = base64.urlsafe_b64decode(encoded + padding).decode("utf-8", errors="ignore")
+                    # Look for http URL in the decoded string
+                    import re
+                    urls_found = re.findall(r'https?://[^\s<>"\'\\]+', decoded)
+                    # Filter out Google URLs
+                    for found_url in urls_found:
+                        if "google.com" not in found_url and len(found_url) > 20:
+                            return found_url.rstrip("/")
+                except Exception:
+                    continue
+    except Exception:
+        pass
+
+    # Fallback: try HTTP redirect
+    try:
         r = requests.head(url, allow_redirects=True, timeout=10)
-        final_url = r.url
-        # Skip if it still points to Google
-        if "news.google.com" not in final_url and "google.com/rss" not in final_url:
-            return final_url
-        # Try GET as fallback (some redirects need it)
+        if "news.google.com" not in r.url and "google.com/rss" not in r.url:
+            return r.url
         r = requests.get(url, allow_redirects=True, timeout=10, stream=True)
         r.close()
         if "news.google.com" not in r.url:
             return r.url
     except Exception:
         pass
-    return url  # Return original if resolution fails
+
+    return url  # Return original if all resolution fails
 
 
 def fetch_news_apify(search_terms: list[str]) -> list[dict]:
@@ -113,8 +139,14 @@ def fetch_news_apify(search_terms: list[str]) -> list[dict]:
         items = res.json()
         print(f"  Apify returned {len(items)} articles")
 
+        # Log first item's keys to debug available fields
+        if items:
+            print(f"  First article keys: {list(items[0].keys())}")
+
         for item in items:
-            url = item.get("url") or item.get("link") or ""
+            # Try multiple field names for the real article URL
+            url = (item.get("sourceUrl") or item.get("articleUrl") or
+                   item.get("link") or item.get("url") or "")
             if not url or url in seen_urls:
                 continue
 
@@ -127,8 +159,8 @@ def fetch_news_apify(search_terms: list[str]) -> list[dict]:
             all_articles.append({
                 "title":   item.get("title") or item.get("headline") or "",
                 "url":     url,
-                "source":  item.get("source") or item.get("publisher") or "",
-                "date":    item.get("publishedAt") or item.get("date") or item.get("published") or "",
+                "source":  item.get("source") or item.get("publisher") or item.get("sourceName") or "",
+                "date":    item.get("publishedAt") or item.get("date") or item.get("published") or item.get("publishDate") or "",
                 "summary": item.get("description") or item.get("snippet") or item.get("text") or "",
             })
 
