@@ -521,8 +521,11 @@ if __name__ == "__main__":
                 pid = result.get("place_id", "")
                 photos = photo_map.get(pid, [])
                 rname = result.get("restaurant_name", "")
-                if len(photos) < 2:
-                    print(f"    {rname}: only {len(photos)} photo(s), skipping GIF")
+                if not photos:
+                    print(f"    {rname}: no photos, skipping GIF")
+                    continue
+                if len(photos) == 1:
+                    print(f"    {rname}: 1 photo, using static image")
                     continue
                 label = f"🍽️ {rname}"
                 gif_bytes = create_gif_from_urls(photos, labels=[label] * len(photos))

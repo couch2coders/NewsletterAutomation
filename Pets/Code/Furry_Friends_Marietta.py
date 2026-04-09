@@ -795,8 +795,11 @@ if __name__ == "__main__":
                 src_url = result.get("source_url", "")
                 photos = photo_map.get(src_url, [])
                 pname = result.get("pet_name", "")
-                if len(photos) < 2:
-                    print(f"    {pname}: only {len(photos)} photo(s), skipping GIF")
+                if not photos:
+                    print(f"    {pname}: no photos, skipping GIF")
+                    continue
+                if len(photos) == 1:
+                    print(f"    {pname}: 1 photo, using static image")
                     continue
                 animal_type = result.get("animal_type", "")
                 emoji = "🐱" if animal_type == "cat" else "🐶"

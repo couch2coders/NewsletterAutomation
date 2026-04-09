@@ -518,8 +518,12 @@ if __name__ == "__main__":
         for listing in tier_listings:
             photos = listing.get("photos", [])
             tier = listing.get("tier", "")
-            if len(photos) < 2:
-                print(f"    {tier}: only {len(photos)} photo(s), skipping GIF")
+            if not photos:
+                print(f"    {tier}: no photos, skipping GIF")
+                continue
+            if len(photos) == 1:
+                print(f"    {tier}: 1 photo, using static image")
+                listing["gif_url"] = None  # assembler will fall back to static photo
                 continue
             try:
                 from gif_maker import create_gif_from_urls
