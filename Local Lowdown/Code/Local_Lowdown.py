@@ -26,14 +26,12 @@ NOTION_API_KEY = os.environ["NOTION_API_KEY"]
 # ---------------------------------------------------------------------------
 # 1. ENVIRONMENT & CONFIG
 # ---------------------------------------------------------------------------
-CLAUDE_API_KEY  = os.environ["CLAUDE_API_KEY"]
-APIFY_API_KEY   = os.environ["APIFY_API_KEY"]
+CLAUDE_API_KEY      = os.environ["CLAUDE_API_KEY"]
+BRAVE_NEWS_API_KEY  = os.environ["BRAVE_NEWS_API_KEY"]
 
 SKILL_PROMPT_PATH = Path(__file__).parent.parent.parent / "Skills" / "newsletter-local-lowdown-skill_auto.md"
 
-APIFY_NEWS_ACTOR = "automation-lab~google-news-scraper"
-APIFY_TIMEOUT    = 120
-MAX_ARTICLES     = 15  # per query — Claude only picks 3-5, no need for more
+MAX_ARTICLES = 15
 
 NEWSLETTERS = [
     {
@@ -59,100 +57,58 @@ def load_skill_prompt() -> str:
 
 
 # ---------------------------------------------------------------------------
-# 3. SCRAPE GOOGLE NEWS VIA APIFY
+# 3. FETCH NEWS VIA BRAVE SEARCH API
 # ---------------------------------------------------------------------------
-def resolve_google_news_url(url: str, title: str = "", source: str = "") -> str:
-    """Resolve Google News redirect URLs to actual article URLs.
-    Falls back to a Google search link for the article title + source."""
-    if "news.google.com" not in url:
-        return url
-
-    # Try HTTP redirect first (works sometimes)
-    try:
-        r = requests.get(url, allow_redirects=True, timeout=10, stream=True,
-                         headers={"User-Agent": "Mozilla/5.0"})
-        r.close()
-        final = r.url
-        if "news.google.com" not in final and "google.com/rss" not in final:
-            return final
-    except Exception:
-        pass
-
-    # Fallback: build a Google search URL for the article
-    # This gives readers a direct path to find the original article
-    if title:
-        from urllib.parse import quote
-        search_query = f"{title} {source}".strip()
-        return f"https://www.google.com/search?q={quote(search_query)}"
-
-    return url
-
-
-def fetch_news_apify(search_terms: list[str]) -> list[dict]:
-    """Fetch recent news articles from Google News via Apify."""
+def fetch_news_brave(search_terms: list[str]) -> list[dict]:
+    """Fetch recent news articles via Brave Search News API. Returns real source URLs."""
     headers = {
-        "Content-Type": "application/json",
-        "Authorization": f"Bearer {APIFY_API_KEY}",
+        "Accept": "application/json",
+        "Accept-Encoding": "gzip",
+        "X-Subscription-Token": BRAVE_NEWS_API_KEY,
     }
 
     all_articles = []
     seen_urls = set()
 
-    # Run one Apify call with all queries
-    print(f"  Searching Google News for: {search_terms}")
-    try:
-        res = requests.post(
-            f"https://api.apify.com/v2/acts/{APIFY_NEWS_ACTOR}/run-sync-get-dataset-items",
-            headers=headers,
-            json={
-                "queries": search_terms,
-                "language": "en",
-                "country": "US",
-                "maxArticles": MAX_ARTICLES,
-            },
-            timeout=APIFY_TIMEOUT,
-        )
-        if res.status_code not in (200, 201):
-            print(f"  Apify error {res.status_code}: {res.text[:300]}")
-            return []
-
-        items = res.json()
-        print(f"  Apify returned {len(items)} articles")
-
-        # Log first item's keys to debug available fields
-        if items:
-            print(f"  First article keys: {list(items[0].keys())}")
-
-        for item in items:
-            title = item.get("title") or item.get("headline") or ""
-            source = item.get("source") or item.get("publisher") or item.get("sourceName") or ""
-
-            # Try multiple field names for the real article URL
-            url = (item.get("sourceUrl") or item.get("articleUrl") or
-                   item.get("link") or item.get("url") or "")
-            if not url or url in seen_urls:
+    for query in search_terms:
+        print(f"  Searching Brave News for: {query}")
+        try:
+            res = requests.get(
+                "https://api.search.brave.com/res/v1/news/search",
+                headers=headers,
+                params={
+                    "q": query,
+                    "count": MAX_ARTICLES,
+                    "freshness": "pw",  # past week
+                },
+                timeout=30,
+            )
+            if res.status_code != 200:
+                print(f"  Brave API error {res.status_code}: {res.text[:300]}")
                 continue
 
-            # Resolve Google News redirect URLs to actual article URLs
-            url = resolve_google_news_url(url, title=title, source=source)
-            if not url or url in seen_urls:
-                continue
-            seen_urls.add(url)
+            data = res.json()
+            results = data.get("results", [])
+            print(f"  Brave returned {len(results)} articles")
 
-            all_articles.append({
-                "title":   title,
-                "url":     url,
-                "source":  source,
-                "date":    item.get("publishedAt") or item.get("date") or item.get("published") or item.get("publishDate") or "",
-                "summary": item.get("description") or item.get("snippet") or item.get("text") or "",
-            })
+            for item in results:
+                url = item.get("url", "")
+                if not url or url in seen_urls:
+                    continue
+                seen_urls.add(url)
 
-    except requests.exceptions.ReadTimeout:
-        print(f"  Apify timeout after {APIFY_TIMEOUT}s")
-    except Exception as e:
-        print(f"  Apify error: {e}")
+                all_articles.append({
+                    "title":   item.get("title", ""),
+                    "url":     url,
+                    "source":  item.get("meta_url", {}).get("hostname", "") if isinstance(item.get("meta_url"), dict) else "",
+                    "date":    item.get("age", "") or item.get("page_age", ""),
+                    "summary": item.get("description", ""),
+                })
 
-    # Deduplicate by title similarity (exact match)
+        except Exception as e:
+            print(f"  Brave API error: {e}")
+
+    # Deduplicate by title
     unique = []
     seen_titles = set()
     for a in all_articles:
@@ -338,8 +294,8 @@ if __name__ == "__main__":
         print(f"Processing: {newsletter['name']} ({newsletter['display_area']})")
         print(f"{'='*60}")
 
-        # Scrape Google News
-        articles = fetch_news_apify(newsletter["search_terms"])
+        # Search for local news via Brave
+        articles = fetch_news_brave(newsletter["search_terms"])
 
         if not articles:
             print(f"  No articles found for {newsletter['name']}. Skipping.")
