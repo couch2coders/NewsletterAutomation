@@ -342,6 +342,7 @@ def parse_detail_html(html: str) -> dict:
                     url = p.get("large") or p.get("full") or p.get("medium") or ""
                     if url:
                         photos.append(url)
+                print(f"      __NEXT_DATA__ photos: {len(photos)}")
                 if photos:
                     detail["photos"] = photos
                 detail["size"] = animal.get("size", "")
@@ -351,6 +352,17 @@ def parse_detail_html(html: str) -> dict:
                 return detail
         except Exception as e:
             print(f"    Detail parse error: {e}")
+
+    # Fallback: scrape photos from DOM (carousel images)
+    if not detail.get("photos") or len(detail.get("photos", [])) < 2:
+        dom_photos = []
+        for img in soup.select("img[src*='cloudfront'], img[src*='dl5zpyw5k3jeb']"):
+            src = img.get("src") or img.get("data-src") or ""
+            if src and src not in dom_photos and "logo" not in src.lower():
+                dom_photos.append(src)
+        if len(dom_photos) > len(detail.get("photos", [])):
+            detail["photos"] = dom_photos[:3]
+            print(f"      DOM fallback photos: {len(dom_photos)}")
 
     desc_el = soup.select_one("[data-test='Pet_Story_Section'], [class*='description'], [class*='Description']")
     if desc_el:
