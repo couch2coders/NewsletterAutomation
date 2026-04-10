@@ -895,10 +895,7 @@ if __name__ == "__main__":
                 if len(photos) == 1:
                     print(f"    {pname}: 1 photo, using static image")
                     continue
-                animal_type = result.get("animal_type", "")
-                emoji = "🐱" if animal_type == "cat" else "🐶"
-                label = f"{emoji} {pname}"
-                gif_bytes = create_gif_from_urls(photos[:3], labels=[label] * min(len(photos), 3))
+                gif_bytes = create_gif_from_urls(photos[:3])
                 if gif_bytes:
                     slug = pname.lower().replace(" ", "_").replace("'", "")[:30]
                     gif_filename = f"pet_{newsletter['name']}_{slug}_{datetime.today().strftime('%Y%m%d')}.gif"
