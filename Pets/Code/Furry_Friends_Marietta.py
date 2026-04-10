@@ -402,16 +402,40 @@ def parse_detail_html(html: str) -> dict:
         except Exception as e:
             print(f"    Detail parse error: {e}")
 
-    # Fallback: scrape photos from DOM (carousel images)
+    # Fallback: scrape photos from DOM (Swiper carousel + img tags)
     if not detail.get("photos") or len(detail.get("photos", [])) < 2:
+        import re as _re
         dom_photos = []
-        for img in soup.select("img[src*='cloudfront'], img[src*='dl5zpyw5k3jeb']"):
-            src = img.get("src") or img.get("data-src") or ""
-            if src and src not in dom_photos and "logo" not in src.lower():
+        seen = set()
+
+        # 1. Swiper slides: photos in img tags inside swiper-slide divs
+        for slide in soup.select(".swiper-slide img"):
+            src = slide.get("src") or slide.get("data-src") or ""
+            if src and "cloudfront" in src and src not in seen:
+                seen.add(src)
                 dom_photos.append(src)
+
+        # 2. Background images in swiper slides (style="background-image:url(...)")
+        for div in soup.select(".swiper-slide div[style*='background-image']"):
+            style = div.get("style", "")
+            urls = _re.findall(r'url\(([^)]+)\)', style)
+            for u in urls:
+                u = u.strip("'\"")
+                if "cloudfront" in u and u not in seen:
+                    seen.add(u)
+                    dom_photos.append(u)
+
+        # 3. General img fallback
+        if not dom_photos:
+            for img in soup.select("img[src*='cloudfront'], img[src*='dl5zpyw5k3jeb']"):
+                src = img.get("src") or img.get("data-src") or ""
+                if src and src not in seen and "logo" not in src.lower():
+                    seen.add(src)
+                    dom_photos.append(src)
+
         if len(dom_photos) > len(detail.get("photos", [])):
             detail["photos"] = dom_photos[:3]
-            print(f"      DOM fallback photos: {len(dom_photos)}")
+            print(f"      Swiper/DOM photos: {len(dom_photos)}")
 
     desc_el = soup.select_one("[data-test='Pet_Story_Section'], [class*='description'], [class*='Description']")
     if desc_el:
@@ -459,12 +483,6 @@ def fetch_petfinder_apify(species: str, excluded_urls: set, state: str, zip_code
 
         detail_html = cache.get(source_url, "")
         detail = parse_detail_html(detail_html) if detail_html else {}
-
-        # Use carousel photos if available (from Apify click-through)
-        carousel_photos = cache.get(source_url + "__photos", [])
-        if carousel_photos:
-            detail["photos"] = carousel_photos[:3]
-            print(f"    {name}: {len(carousel_photos)} carousel photos found")
 
         description = detail.get("description") or item.get("description") or ""
         if not description or len(description.strip()) < 30:
@@ -807,7 +825,7 @@ if __name__ == "__main__":
         for i in range(0, len(detail_urls), BATCH_SIZE):
             batch = detail_urls[i:i + BATCH_SIZE]
             print(f"\n  Batch {i // BATCH_SIZE + 1}: {len(batch)} URLs")
-            batch_cache = fetch_all_html_apify(batch, click_carousel=True)
+            batch_cache = fetch_all_html_apify(batch)
             html_cache.update(batch_cache)
     else:
         print("\n  No detail pages to scrape")
