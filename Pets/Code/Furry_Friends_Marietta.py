@@ -398,11 +398,10 @@ def parse_detail_html(html: str) -> dict:
                 detail["age"] = animal.get("age", "")
                 detail["gender"] = animal.get("gender", "")
                 detail["breed"] = (animal.get("breeds") or {}).get("primary", "")
-                return detail
         except Exception as e:
             print(f"    Detail parse error: {e}")
 
-    # Fallback: scrape photos from DOM (Swiper carousel + img tags)
+    # Always check Swiper carousel for additional photos
     if not detail.get("photos") or len(detail.get("photos", [])) < 2:
         import re as _re
         dom_photos = []
