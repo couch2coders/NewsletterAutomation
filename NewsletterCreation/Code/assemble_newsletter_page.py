@@ -539,21 +539,17 @@ def build_newsletter_blocks(newsletter_name: str) -> list[dict]:
             tier_emoji = {"Starter": "🏠", "Sweet Spot": "🏡", "Showcase": "🏰"}.get(listing["tier"], "🏠")
             price_str = f"${listing['price']:,}" if listing.get("price") else ""
             blocks.append(paragraph_block(f"{tier_emoji} {listing['tier']}: {listing.get('headline', '')}", bold=True))
-            # Show template image (preferred) > GIF > static photo
+            # Show template image (has border + details baked in)
             if listing.get("template"):
                 blocks.append(image_block(listing["template"]))
-            elif listing.get("gif"):
-                blocks.append(image_block(listing["gif"]))
             elif listing.get("photo"):
                 blocks.append(image_block(listing["photo"]))
             if listing.get("blurb"):
                 blocks.append(paragraph_block(listing["blurb"]))
             if listing.get("url"):
                 blocks.append(link_block("View Listing", listing['url']))
-            if listing.get("gif"):
-                blocks.append(link_block("Download GIF", listing['gif']))
             if listing.get("template"):
-                blocks.append(link_block("Download Template Image", listing['template']))
+                blocks.append(link_block("Download Image", listing['template']))
             blocks.append(paragraph_block(""))
     else:
         blocks.append(callout_block("No real estate listings yet. Run the Real Estate Corner pipeline.", emoji="⏳"))

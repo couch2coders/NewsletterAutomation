@@ -510,60 +510,10 @@ if __name__ == "__main__":
         print(f"\n  Generating blurbs for {len(tier_listings)} listings...")
         results = generate_blurbs(tier_listings, skill_prompt, newsletter["display"])
 
-        # Generate one GIF per listing (cycling through that listing's photos)
-        print(f"\n  Creating GIFs for {len(tier_listings)} listings...")
+        # Generate template images (animated GIF with border overlay)
         sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', 'NewsletterCreation', 'Code'))
         output_dir = Path(__file__).parent / "output"
         output_dir.mkdir(exist_ok=True)
-
-        for listing in tier_listings:
-            photos = listing.get("photos", [])
-            tier = listing.get("tier", "")
-            if not photos:
-                print(f"    {tier}: no photos, skipping GIF")
-                continue
-            if len(photos) == 1:
-                print(f"    {tier}: 1 photo, using static image")
-                listing["gif_url"] = None  # assembler will fall back to static photo
-                continue
-            try:
-                from gif_maker import create_gif_from_urls
-                price = listing.get("price", 0)
-                beds = listing.get("beds", 0)
-                baths = listing.get("baths", 0)
-                addr = listing.get("address", "").split(",")[0] if listing.get("address") else ""
-                tier_emoji = {"Starter": "🏠", "Sweet Spot": "🏡", "Showcase": "🏰"}.get(tier, "🏠")
-                label = f"{tier_emoji} {tier}  •  ${price:,}  •  {beds}bd/{baths}ba"
-
-                gif_bytes = create_gif_from_urls(
-                    photos,
-                    labels=[label] * len(photos),  # Same label on every frame
-                )
-                if gif_bytes:
-                    tier_slug = tier.lower().replace(" ", "_")
-                    gif_filename = f"re_{newsletter['name']}_{tier_slug}_{datetime.today().strftime('%Y%m%d')}.gif"
-                    gif_path = output_dir / gif_filename
-                    gif_path.write_bytes(gif_bytes)
-                    listing["gif_path"] = str(gif_path)
-                    listing["gif_filename"] = gif_filename
-                    print(f"    ✓ {tier} GIF: {len(photos)} frames, {len(gif_bytes):,} bytes")
-            except Exception as e:
-                print(f"    ✗ {tier} GIF failed: {e}")
-
-        # Build GIF URLs for Notion (hosted on gh-pages)
-        gif_url_map = {}
-        for listing in tier_listings:
-            if listing.get("gif_filename"):
-                gif_url = f"https://couch2coders.github.io/NewsletterAutomation/gifs/{listing['gif_filename']}"
-                gif_url_map[listing["tier"]] = gif_url
-
-        # Merge GIF URLs into Claude's results
-        for r in results:
-            tier = r.get("tier", "")
-            if tier in gif_url_map:
-                r["gif_url"] = gif_url_map[tier]
-
-        # Generate template images (matching Canva design)
         print(f"\n  Creating listing images...")
         try:
             from re_image_maker import generate_re_images
