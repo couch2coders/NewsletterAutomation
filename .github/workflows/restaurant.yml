@@ -39,16 +39,19 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
         run: |
           if ls Restaurants/Code/output/*.gif 1>/dev/null 2>&1; then
+            cp -r Restaurants/Code/output /tmp/restaurant_gifs
             git config user.name "github-actions"
             git config user.email "github-actions@github.com"
+            git stash --include-untracked || true
             git fetch origin gh-pages
             git checkout gh-pages
             mkdir -p gifs
-            cp Restaurants/Code/output/*.gif gifs/
+            cp /tmp/restaurant_gifs/*.gif gifs/
             git add gifs/
             git commit -m "update restaurant GIFs" || true
             git push origin gh-pages
             git checkout main
+            git stash pop || true
             echo "✓ Restaurant GIFs published"
           else
             echo "No GIFs to publish"

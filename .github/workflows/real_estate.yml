@@ -38,20 +38,23 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
         run: |
           if ls "Real Estate Corner/Code/output/"*.gif "Real Estate Corner/Code/output/"*.png 1>/dev/null 2>&1; then
+            cp -r "Real Estate Corner/Code/output" /tmp/re_images
             git config user.name "github-actions"
             git config user.email "github-actions@github.com"
+            git stash --include-untracked || true
             git fetch origin gh-pages
             git checkout gh-pages
             mkdir -p gifs
-            cp "Real Estate Corner/Code/output/"*.gif gifs/ 2>/dev/null || true
-            cp "Real Estate Corner/Code/output/"*.png gifs/ 2>/dev/null || true
+            cp /tmp/re_images/*.gif gifs/ 2>/dev/null || true
+            cp /tmp/re_images/*.png gifs/ 2>/dev/null || true
             git add gifs/
             git commit -m "update real estate images" || true
             git push origin gh-pages
             git checkout main
-            echo "✓ GIFs published to gh-pages/gifs/"
+            git stash pop || true
+            echo "✓ Images published to gh-pages/gifs/"
           else
-            echo "No GIFs to publish"
+            echo "No images to publish"
           fi
 
       - name: Trigger newsletter page rebuild
