@@ -234,15 +234,14 @@ def link_block(label: str, url: str) -> dict:
     }
 
 
-def image_block(url: str, caption: str = "") -> dict:
-    """An embedded image block with optional caption."""
+def image_block(url: str) -> dict:
+    """An embedded image block with no caption."""
     return {
         "object": "block",
         "type": "image",
         "image": {
             "type": "external",
             "external": {"url": url},
-            "caption": [{"type": "text", "text": {"content": caption}}] if caption else [],
         },
     }
 
@@ -375,7 +374,16 @@ def get_restaurants(newsletter_name: str) -> list[dict]:
             "gif":      props.get("GIF URL", {}).get("url", ""),
             "website":  props.get("Website", {}).get("url", ""),
             "maps_url": props.get("Google Maps URL", {}).get("url", ""),
+            "date":     (props.get("Date Generated", {}).get("date") or {}).get("start", ""),
         })
+
+    # Only keep the most recent batch (by date) to prevent duplicates
+    if results:
+        dates = [r["date"] for r in results if r.get("date")]
+        if dates:
+            latest_date = max(dates)
+            results = [r for r in results if r.get("date") == latest_date]
+
     # Sort: Tier 1 first, then by score
     results.sort(key=lambda x: (0 if x["tier"] == "Tier 1 Winner" else 1, -(x["score"] or 0)))
     return results
@@ -435,10 +443,21 @@ def get_real_estate(newsletter_name: str) -> list[dict]:
             "gif":      props.get("GIF URL", {}).get("url", ""),
             "template": props.get("Template Image", {}).get("url", ""),
             "url":      props.get("Listing URL", {}).get("url", ""),
+            "date":     (props.get("Date Generated", {}).get("date") or {}).get("start", ""),
         })
-    # Sort: Starter, Sweet Spot, Showcase
-    tier_order = {"Starter": 0, "Sweet Spot": 1, "Showcase": 2}
-    results.sort(key=lambda x: tier_order.get(x["tier"], 9))
+    # Only keep the most recent batch (by date)
+    if results:
+        dates = set()
+        for r in results:
+            d = r.get("date", "")
+            if d:
+                dates.add(d)
+        if dates:
+            latest_date = max(dates)
+            results = [r for r in results if r.get("date", "") == latest_date]
+
+    # Sort: Tier 1 first, then by score
+    results.sort(key=lambda x: (0 if x["tier"] == "Tier 1 Winner" else 1, -(x["score"] or 0)))
     return results
 
 

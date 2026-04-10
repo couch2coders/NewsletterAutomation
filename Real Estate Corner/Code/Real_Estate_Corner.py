@@ -341,10 +341,22 @@ def cleanup_old_re_listings() -> None:
 
 
 def save_real_estate_to_notion(results: list[dict], newsletter_name: str) -> None:
-    """Save real estate listings to Notion database."""
+    """Save real estate listings to Notion database. Replaces existing entries for this newsletter."""
     if not NOTION_RE_DB_ID:
         print("  No NOTION_RE_DB_ID set, skipping Notion save")
         return
+
+    # Delete existing entries for this newsletter (prevents duplicates)
+    try:
+        existing = query_database(NOTION_RE_DB_ID)
+        existing = [p for p in existing if
+                    (p["properties"].get("Newsletter", {}).get("select") or {}).get("name") == newsletter_name]
+        for page in existing:
+            archive_page(page["id"])
+        if existing:
+            print(f"  Archived {len(existing)} old RE entries for {newsletter_name}")
+    except Exception:
+        pass
 
     for listing in results:
         properties = {
