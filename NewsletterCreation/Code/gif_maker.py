@@ -19,8 +19,8 @@ from PIL import Image
 
 def create_gif_from_urls(
     urls: list[str],
-    width: int = 800,
-    height: int = 600,
+    width: int = 680,
+    height: int = 510,
     duration_ms: int = 2000,
     labels: list[str] | None = None,
     crop_top: bool = False,
