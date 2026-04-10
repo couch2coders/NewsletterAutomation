@@ -65,8 +65,9 @@ approved_urls = get_approved_pet_urls()
 # 5. FETCH PETS FROM PETFINDER VIA APIFY
 # ---------------------------------------------------------------------------
 
-def fetch_all_html_apify(urls: list[str]) -> dict[str, str]:
+def fetch_all_html_apify(urls: list[str], click_carousel: bool = False) -> dict[str, str]:
     """Fetch ALL URLs in a single Apify web-scraper run. Returns {url: html} dict.
+    If click_carousel=True, clicks through photo carousels to load all images.
     Retries up to 2 times on connection errors."""
     if not urls:
         return {}
@@ -74,6 +75,58 @@ def fetch_all_html_apify(urls: list[str]) -> dict[str, str]:
         "Content-Type": "application/json",
         "Authorization": f"Bearer {APIFY_API_KEY}",
     }
+
+    if click_carousel:
+        page_function = """
+async function pageFunction(context) {
+    const { page, request, log } = context;
+
+    // Wait for page to load
+    await page.waitForTimeout(3000);
+
+    // Click carousel arrows to load all photos
+    const photoUrls = new Set();
+
+    // Collect initial visible images
+    const collectPhotos = async () => {
+        const imgs = await page.$$eval('img[src*="cloudfront"], img[src*="dl5zpyw5k3jeb"]', els =>
+            els.map(el => el.src || el.dataset.src).filter(s => s && !s.includes('logo'))
+        );
+        imgs.forEach(u => photoUrls.add(u));
+    };
+
+    await collectPhotos();
+
+    // Try clicking next arrow up to 5 times
+    for (let i = 0; i < 5; i++) {
+        const nextBtn = await page.$('button[aria-label="Next"], [class*="next"], [class*="Next"], [data-testid="next"]');
+        if (!nextBtn) break;
+        try {
+            await nextBtn.click();
+            await page.waitForTimeout(1000);
+            await collectPhotos();
+        } catch(e) { break; }
+    }
+
+    log.info(`Found ${photoUrls.size} photos after carousel clicks`);
+
+    return {
+        url: request.url,
+        html: document.documentElement.outerHTML,
+        carouselPhotos: [...photoUrls],
+    };
+}
+"""
+    else:
+        page_function = """
+async function pageFunction(context) {
+    return {
+        url: context.request.url,
+        html: document.documentElement.outerHTML
+    };
+}
+"""
+
     for attempt in range(3):
         try:
             print(f"  Starting Apify run for {len(urls)} URLs (concurrency=5){' (retry)' if attempt > 0 else ''}...")
@@ -82,14 +135,7 @@ def fetch_all_html_apify(urls: list[str]) -> dict[str, str]:
                 headers=headers,
                 json={
                     "startUrls": [{"url": u} for u in urls],
-                    "pageFunction": """
-async function pageFunction(context) {
-    return {
-        url: context.request.url,
-        html: document.documentElement.outerHTML
-    };
-}
-""",
+                    "pageFunction": page_function,
                     "maxConcurrency": 5,
                     "maxRequestsPerCrawl": len(urls),
                 },
@@ -108,7 +154,12 @@ async function pageFunction(context) {
                 h = item.get("html", "")
                 if u and h:
                     result[u] = h
-            print(f"  Apify returned {len(result)} pages")
+                # Store carousel photos separately if available
+                carousel = item.get("carouselPhotos", [])
+                if carousel and u:
+                    result[u + "__photos"] = carousel
+                    print(f"    {u[:60]}... → {len(carousel)} carousel photos")
+            print(f"  Apify returned {len([k for k in result if not k.endswith('__photos')])} pages")
             return result
         except (requests.exceptions.ReadTimeout, requests.exceptions.ConnectionError) as e:
             print(f"  Apify connection error (attempt {attempt + 1}): {type(e).__name__}")
@@ -410,6 +461,12 @@ def fetch_petfinder_apify(species: str, excluded_urls: set, state: str, zip_code
 
         detail_html = cache.get(source_url, "")
         detail = parse_detail_html(detail_html) if detail_html else {}
+
+        # Use carousel photos if available (from Apify click-through)
+        carousel_photos = cache.get(source_url + "__photos", [])
+        if carousel_photos:
+            detail["photos"] = carousel_photos[:3]
+            print(f"    {name}: {len(carousel_photos)} carousel photos found")
 
         description = detail.get("description") or item.get("description") or ""
         if not description or len(description.strip()) < 30:
@@ -752,7 +809,7 @@ if __name__ == "__main__":
         for i in range(0, len(detail_urls), BATCH_SIZE):
             batch = detail_urls[i:i + BATCH_SIZE]
             print(f"\n  Batch {i // BATCH_SIZE + 1}: {len(batch)} URLs")
-            batch_cache = fetch_all_html_apify(batch)
+            batch_cache = fetch_all_html_apify(batch, click_carousel=True)
             html_cache.update(batch_cache)
     else:
         print("\n  No detail pages to scrape")
