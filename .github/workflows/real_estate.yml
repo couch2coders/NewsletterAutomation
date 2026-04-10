@@ -37,7 +37,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
         run: |
-          if ls "Real Estate Corner/Code/output/"*.gif 1>/dev/null 2>&1 || ls "Real Estate Corner/Code/output/"*.png 1>/dev/null 2>&1; then
+          if compgen -G "Real Estate Corner/Code/output/*" > /dev/null 2>&1; then
             cp -r "Real Estate Corner/Code/output" /tmp/re_images
             git config user.name "github-actions"
             git config user.email "github-actions@github.com"
@@ -47,9 +47,10 @@ jobs:
             mkdir -p gifs
             echo "Files in /tmp/re_images/:"
             ls -la /tmp/re_images/ 2>/dev/null || echo "  /tmp/re_images/ not found"
-            rm -f gifs/re_*.gif gifs/re_*.png 2>/dev/null || true
-            cp /tmp/re_images/*.gif gifs/ 2>/dev/null || echo "  No GIFs to copy"
-            cp /tmp/re_images/*.png gifs/ 2>/dev/null || echo "  No PNGs to copy"
+            rm -f gifs/re_*.gif gifs/re_*.png gifs/re_*.webp 2>/dev/null || true
+            cp /tmp/re_images/*.gif gifs/ 2>/dev/null || true
+            cp /tmp/re_images/*.png gifs/ 2>/dev/null || true
+            cp /tmp/re_images/*.webp gifs/ 2>/dev/null || true
             echo "Files in gifs/ after copy:"
             ls -la gifs/re_* 2>/dev/null || echo "  No RE files in gifs/"
             git add gifs/

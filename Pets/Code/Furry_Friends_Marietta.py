@@ -912,7 +912,7 @@ if __name__ == "__main__":
                 gif_bytes = create_gif_from_urls(photos[:3], crop_top=True)
                 if gif_bytes:
                     slug = pname.lower().replace(" ", "_").replace("'", "")[:30]
-                    gif_filename = f"pet_{newsletter['name']}_{slug}_{datetime.today().strftime('%Y%m%d')}.gif"
+                    gif_filename = f"pet_{newsletter['name']}_{slug}_{datetime.today().strftime('%Y%m%d')}.webp"
                     gif_path = output_dir / gif_filename
                     gif_path.write_bytes(gif_bytes)
                     cache_bust = int(datetime.today().timestamp())

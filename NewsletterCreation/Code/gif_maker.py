@@ -71,23 +71,16 @@ def create_gif_from_urls(
     if not frames:
         return None
 
-    # Convert frames to high-quality palettized images for GIF
-    gif_frames = []
-    for frame in frames:
-        # Quantize with maximum colors and good dithering
-        quantized = frame.quantize(colors=256, method=Image.Quantize.MEDIANCUT, dither=Image.Dither.FLOYDSTEINBERG)
-        gif_frames.append(quantized)
-
-    # Create animated GIF
+    # Create animated WebP (full color, no pixelation)
     output = io.BytesIO()
-    gif_frames[0].save(
+    frames[0].save(
         output,
-        format="GIF",
+        format="WEBP",
         save_all=True,
-        append_images=gif_frames[1:],
+        append_images=frames[1:],
         duration=duration_ms,
-        loop=0,  # Loop forever
-        optimize=False,  # Don't re-optimize (preserves quality)
+        loop=0,
+        quality=85,
     )
     output.seek(0)
     print(f"  GIF: created {len(frames)} frames, {width}x{height}, {duration_ms}ms per frame")
@@ -95,7 +88,7 @@ def create_gif_from_urls(
 
 
 def _crop_to_aspect(img: Image.Image, target_w: int, target_h: int, keep_top: bool = False) -> Image.Image:
-    """Crop image to target aspect ratio. Center crop by default, top crop if keep_top=True."""
+    """Crop image to target aspect ratio. Center crop by default, near-top crop if keep_top=True."""
     target_ratio = target_w / target_h
     img_ratio = img.width / img.height
 
@@ -105,10 +98,12 @@ def _crop_to_aspect(img: Image.Image, target_w: int, target_h: int, keep_top: bo
         left = (img.width - new_width) // 2
         img = img.crop((left, 0, left + new_width, img.height))
     elif img_ratio < target_ratio:
-        # Image is taller — crop bottom (keep_top) or center
         new_height = int(img.width / target_ratio)
         if keep_top:
-            img = img.crop((0, 0, img.width, new_height))
+            # Offset 10% from top — keeps head in frame without cutting it off
+            max_top = img.height - new_height
+            top = int(max_top * 0.10)
+            img = img.crop((0, top, img.width, top + new_height))
         else:
             top = (img.height - new_height) // 2
             img = img.crop((0, top, img.width, top + new_height))
