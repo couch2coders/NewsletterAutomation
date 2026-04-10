@@ -46,6 +46,7 @@ jobs:
             git fetch origin gh-pages
             git checkout gh-pages
             mkdir -p gifs
+            rm -f gifs/pet_*.gif 2>/dev/null || true
             cp /tmp/pet_gifs/*.gif gifs/
             git add gifs/
             git commit -m "update pet GIFs" || true
