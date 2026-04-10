@@ -19,8 +19,8 @@ from PIL import Image
 
 def create_gif_from_urls(
     urls: list[str],
-    width: int = 600,
-    height: int = 400,
+    width: int = 800,
+    height: int = 600,
     duration_ms: int = 2000,
     labels: list[str] | None = None,
 ) -> bytes | None:
@@ -70,16 +70,23 @@ def create_gif_from_urls(
     if not frames:
         return None
 
+    # Convert frames to high-quality palettized images for GIF
+    gif_frames = []
+    for frame in frames:
+        # Quantize with maximum colors and good dithering
+        quantized = frame.quantize(colors=256, method=Image.Quantize.MEDIANCUT, dither=Image.Dither.FLOYDSTEINBERG)
+        gif_frames.append(quantized)
+
     # Create animated GIF
     output = io.BytesIO()
-    frames[0].save(
+    gif_frames[0].save(
         output,
         format="GIF",
         save_all=True,
-        append_images=frames[1:],
+        append_images=gif_frames[1:],
         duration=duration_ms,
         loop=0,  # Loop forever
-        optimize=True,
+        optimize=False,  # Don't re-optimize (preserves quality)
     )
     output.seek(0)
     print(f"  GIF: created {len(frames)} frames, {width}x{height}, {duration_ms}ms per frame")
@@ -87,20 +94,19 @@ def create_gif_from_urls(
 
 
 def _crop_to_aspect(img: Image.Image, target_w: int, target_h: int) -> Image.Image:
-    """Crop image to target aspect ratio (center crop)."""
+    """Crop image to target aspect ratio (top-aligned crop to keep heads/faces)."""
     target_ratio = target_w / target_h
     img_ratio = img.width / img.height
 
     if img_ratio > target_ratio:
-        # Image is wider — crop sides
+        # Image is wider — crop sides (center)
         new_width = int(img.height * target_ratio)
         left = (img.width - new_width) // 2
         img = img.crop((left, 0, left + new_width, img.height))
     elif img_ratio < target_ratio:
-        # Image is taller — crop top/bottom
+        # Image is taller — crop from BOTTOM (keep top where heads are)
         new_height = int(img.width / target_ratio)
-        top = (img.height - new_height) // 2
-        img = img.crop((0, top, img.width, top + new_height))
+        img = img.crop((0, 0, img.width, new_height))
 
     return img
 
