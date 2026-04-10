@@ -805,7 +805,7 @@ if __name__ == "__main__":
                 url = p.get("url", "").rstrip("/")
                 if url and url not in approved_urls:
                     candidates.append(p)
-            candidates = candidates[:7]  # take up to 7 per species/newsletter (need 5, buffer for missing descriptions)
+            candidates = candidates[:5]  # take up to 5 per species/newsletter (need 3, buffer for missing descriptions)
             search_results[(nl["name"], species)] = candidates
             for c in candidates:
                 detail_urls.append(c["url"].rstrip("/"))
@@ -837,9 +837,9 @@ if __name__ == "__main__":
         print(f"{'='*60}")
 
         all_cats = fetch_petfinder_apify("Cat", approved_urls, newsletter["state"], newsletter["zip"],
-                                         target=5, _html_cache=html_cache)
+                                         target=3, _html_cache=html_cache)
         all_dogs = fetch_petfinder_apify("Dog", approved_urls, newsletter["state"], newsletter["zip"],
-                                         target=5, _html_cache=html_cache)
+                                         target=3, _html_cache=html_cache)
 
         print(f"\nTotal cats: {len(all_cats)}")
         print(f"Total dogs: {len(all_dogs)}")
