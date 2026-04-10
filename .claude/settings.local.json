@@ -27,7 +27,8 @@
       "Bash(git mv:*)",
       "Bash(git rm:*)",
       "mcp__fba16c43-3dfc-476f-880e-b405bf562b58__start-editing-transaction",
-      "mcp__fba16c43-3dfc-476f-880e-b405bf562b58__cancel-editing-transaction"
+      "mcp__fba16c43-3dfc-476f-880e-b405bf562b58__cancel-editing-transaction",
+      "Bash(git ls-tree:*)"
     ]
   }
 }

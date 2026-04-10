@@ -51,6 +51,17 @@ jobs:
           rm -rf dist
           npm run build
 
+      - name: Preserve existing GIFs/images from gh-pages
+        run: |
+          git fetch origin gh-pages || true
+          git checkout origin/gh-pages -- gifs/ 2>/dev/null || true
+          if [ -d "gifs" ]; then
+            cp -r gifs review-app/dist/gifs
+            echo "✓ Preserved $(ls gifs/ | wc -l) files from gifs/"
+          else
+            echo "No existing gifs/ to preserve"
+          fi
+
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
