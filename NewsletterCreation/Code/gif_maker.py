@@ -23,6 +23,7 @@ def create_gif_from_urls(
     height: int = 600,
     duration_ms: int = 2000,
     labels: list[str] | None = None,
+    crop_top: bool = False,
 ) -> bytes | None:
     """
     Download images from URLs, crop/resize to uniform dimensions, and create an animated GIF.
@@ -54,7 +55,7 @@ def create_gif_from_urls(
                 img = img.convert("RGB")
 
             # Smart crop to target aspect ratio, then resize
-            img = _crop_to_aspect(img, width, height)
+            img = _crop_to_aspect(img, width, height, keep_top=crop_top)
             img = img.resize((width, height), Image.LANCZOS)
 
             # Add label overlay if provided
@@ -93,20 +94,24 @@ def create_gif_from_urls(
     return output.read()
 
 
-def _crop_to_aspect(img: Image.Image, target_w: int, target_h: int) -> Image.Image:
-    """Crop image to target aspect ratio (top-aligned crop to keep heads/faces)."""
+def _crop_to_aspect(img: Image.Image, target_w: int, target_h: int, keep_top: bool = False) -> Image.Image:
+    """Crop image to target aspect ratio. Center crop by default, top crop if keep_top=True."""
     target_ratio = target_w / target_h
     img_ratio = img.width / img.height
 
     if img_ratio > target_ratio:
-        # Image is wider — crop sides (center)
+        # Image is wider — crop sides (always center)
         new_width = int(img.height * target_ratio)
         left = (img.width - new_width) // 2
         img = img.crop((left, 0, left + new_width, img.height))
     elif img_ratio < target_ratio:
-        # Image is taller — crop from BOTTOM (keep top where heads are)
+        # Image is taller — crop bottom (keep_top) or center
         new_height = int(img.width / target_ratio)
-        img = img.crop((0, 0, img.width, new_height))
+        if keep_top:
+            img = img.crop((0, 0, img.width, new_height))
+        else:
+            top = (img.height - new_height) // 2
+            img = img.crop((0, top, img.width, top + new_height))
 
     return img
 
