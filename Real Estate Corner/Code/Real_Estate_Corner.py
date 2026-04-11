@@ -550,7 +550,7 @@ if __name__ == "__main__":
                 tier = img_result["tier"]
                 img_filename = img_result["image_filename"]
                 cache_bust = int(datetime.today().timestamp())
-                img_url = f"https://couch2coders.github.io/NewsletterAutomation/gifs/{img_filename}?v={cache_bust}"
+                img_url = f"https://peachyinsurance.github.io/newsletters/gifs/{img_filename}?v={cache_bust}"
                 for r in results:
                     if r.get("tier") == tier:
                         r["template_image_url"] = img_url

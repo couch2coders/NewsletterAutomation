@@ -916,7 +916,7 @@ if __name__ == "__main__":
                     gif_path = output_dir / gif_filename
                     gif_path.write_bytes(gif_bytes)
                     cache_bust = int(datetime.today().timestamp())
-                    result["gif_url"] = f"https://couch2coders.github.io/NewsletterAutomation/gifs/{gif_filename}?v={cache_bust}"
+                    result["gif_url"] = f"https://peachyinsurance.github.io/newsletters/gifs/{gif_filename}?v={cache_bust}"
                     result["gif_filename"] = gif_filename
                     print(f"    ✓ {pname} GIF: {min(len(photos), 3)} frames, {len(gif_bytes):,} bytes")
         except Exception as e:

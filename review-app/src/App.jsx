@@ -5,8 +5,8 @@ import PetTile from "./PetTile";
 import RestaurantTile from "./RestaurantTile";
 
 // ── CONFIG ────────────────────────────────────────────────────────────────────
-const GITHUB_OWNER = "couch2coders";
-const GITHUB_REPO  = "NewsletterAutomation";
+const GITHUB_OWNER = "peachyinsurance";
+const GITHUB_REPO  = "newsletters";
 
 // ── SECTIONS CONFIG ───────────────────────────────────────────────────────────
 const SECTIONS = {

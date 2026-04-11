@@ -18,7 +18,7 @@ from urllib.parse import urlencode
 import requests
 
 CLIENT_ID = "OC-AZ10LQbljNIw"
-REDIRECT_URI = "https://couch2coders.github.io/NewsletterAutomation/callback.html"
+REDIRECT_URI = "https://peachyinsurance.github.io/newsletters/callback.html"
 SCOPES = "design:content:read design:content:write asset:write"
 
 # PKCE
