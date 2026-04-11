@@ -232,16 +232,18 @@ def generate_pets():
 
     results = claude_json(skill, f"Here are adoptable pets from shelters near East Cobb, GA.\nPick the TOP 3 and write a blurb for each.\nReturn ONLY a JSON array.\n\n{profiles}")
 
-    # Score
-    scoring_input = "\n".join([f"--- Candidate {i+1} ---\nPet Name: {r['pet_name']}\nBlurb: {r['blurb']}\nSource URL: {r['source_url']}" for i, r in enumerate(results)])
-    scores = claude_json("", f"Score each pet 0-10 for adoptability, story, shelter_time. Return JSON array with pet_name, source_url, total_score.\n\n{scoring_input}")
-
-    score_map = {s["source_url"]: s for s in scores}
+    # Normalize field names (Claude may return 'name' or 'pet_name', etc.)
     for r in results:
-        s = score_map.get(r["source_url"], {})
-        r["total_score"] = s.get("total_score", 0)
+        r["pet_name"] = r.get("pet_name") or r.get("name", "Unknown")
+        r["source_url"] = r.get("source_url") or r.get("url", "")
+        r["blurb"] = r.get("blurb") or r.get("description", "")
+        r["shelter_name"] = r.get("shelter_name") or r.get("shelter", "")
+    print(f"  Claude returned {len(results)} pet blurbs")
 
-    results.sort(key=lambda x: x.get("total_score", 0), reverse=True)
+    # Score — pick highest by blurb quality (skip separate scoring call to save time)
+    for i, r in enumerate(results):
+        r["total_score"] = len(results) - i  # Simple rank-based score
+
     winner = results[0] if results else None
 
     # Map photos back
