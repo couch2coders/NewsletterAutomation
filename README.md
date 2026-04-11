@@ -1,4 +1,5 @@
-# newsletters
-Using AI Prompts create accurate Newsletter sections
+# 🗞️ East Cobb Connect — Newsletter Automation
 
-Click [here](https://peachyinsurance.github.io/newsletters/) for pets 
+Auto-generated newsletter content for East Cobb, GA. Updated weekly.
+
+*Run the workflow to generate this week's content.*

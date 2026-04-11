@@ -1,0 +1,42 @@
+name: Generate Newsletter
+
+on:
+  schedule:
+    - cron: '0 9 * * 1'  # Every Monday at 9am UTC
+  workflow_dispatch:
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - run: pip install requests anthropic beautifulsoup4 Pillow
+
+      - name: Generate newsletter
+        env:
+          CLAUDE_API_KEY:         ${{ secrets.CLAUDE_API_KEY }}
+          APIFY_API_KEY:          ${{ secrets.APIFY_API_KEY }}
+          GOOGLE_PLACES_API_KEY:  ${{ secrets.GOOGLE_PLACES_API_KEY }}
+          REALTOR_API_KEY:        ${{ secrets.REALTOR_API_KEY }}
+          BRAVE_NEWS_API_KEY:     ${{ secrets.BRAVE_NEWS_API_KEY }}
+        run: python Code/generate_newsletter.py
+
+      - name: Commit README
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add README.md
+          git diff --cached --quiet || git commit -m "update newsletter — $(date +%Y-%m-%d)"
+          git push
+
+      - name: Upload images
+        uses: actions/upload-artifact@v4
+        with:
+          name: newsletter-images
+          path: Code/output/*
+          if-no-files-found: ignore
