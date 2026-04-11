@@ -29,7 +29,8 @@
       "mcp__fba16c43-3dfc-476f-880e-b405bf562b58__start-editing-transaction",
       "mcp__fba16c43-3dfc-476f-880e-b405bf562b58__cancel-editing-transaction",
       "Bash(git ls-tree:*)",
-      "Bash(/dev/null echo:*)"
+      "Bash(/dev/null echo:*)",
+      "Bash(wc -c Skills/*.md)"
     ]
   }
 }

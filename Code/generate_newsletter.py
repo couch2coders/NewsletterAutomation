@@ -66,7 +66,19 @@ def claude_json(system_prompt: str, user_prompt: str) -> list | dict:
     return json.loads(clean)
 
 
+SKILL_ENV_MAP = {
+    "newsletter-pet-adoption-skill_auto.md": "SKILL_PETS",
+    "newsletter-restaurant-blurb-skill.md": "SKILL_RESTAURANTS",
+    "newsletter-local-lowdown-skill_auto.md": "SKILL_LOWDOWN",
+    "newsletter-real-estate-skill_auto.md": "SKILL_REAL_ESTATE",
+}
+
+
 def load_skill(name: str) -> str:
+    """Load skill from environment variable (for public repo) or file (for local dev)."""
+    env_key = SKILL_ENV_MAP.get(name, "")
+    if env_key and os.environ.get(env_key):
+        return os.environ[env_key]
     path = SKILLS_DIR / name
     return path.read_text(encoding="utf-8") if path.exists() else ""
 

@@ -24,6 +24,10 @@ jobs:
           GOOGLE_PLACES_API_KEY:  ${{ secrets.GOOGLE_PLACES_API_KEY }}
           REALTOR_API_KEY:        ${{ secrets.REALTOR_API_KEY }}
           BRAVE_NEWS_API_KEY:     ${{ secrets.BRAVE_NEWS_API_KEY }}
+          SKILL_PETS:             ${{ secrets.SKILL_PETS }}
+          SKILL_RESTAURANTS:      ${{ secrets.SKILL_RESTAURANTS }}
+          SKILL_LOWDOWN:          ${{ secrets.SKILL_LOWDOWN }}
+          SKILL_REAL_ESTATE:      ${{ secrets.SKILL_REAL_ESTATE }}
         run: python Code/generate_newsletter.py
 
       - name: Commit README
