@@ -8,17 +8,18 @@
 
 **Unknown**
 
-Luke's story started rough. His mom Miss Daisy ended up at the county shelter with her two puppies after their owner passed away and nobody in the family stepped up to help. But once Luke got to Our Pal's Place, he turned into the fun-loving, playful boy he was meant to be. The summer camp kids at the rescue gave him tons of attention and walks on the trails, and he soaked it all up.
+Beignet is getting a second chance, and she's making the most of it. She was adopted from Good Mews as a kitten, ended up scared and alone at a county shelter somehow, and now she's back where she started. Sometimes life just works out that way.
 
-He's got the face of a Belgian Malinois but he's smaller than most shepherds, which means you get all that smart, loyal shepherd personality in a more manageable package. Luke is young and energetic, so he's going to need someone who can keep up with him and give him things to do. Shepherds are happiest when they have a job, even if that job is just being your hiking buddy or learning new tricks.
+She spent some time in foster care getting her confidence back, and it worked. She loves being petted and turns into a social butterfly at mealtime. When she wants attention, she'll sit close or lean right up against you. She can give gentle love bites when she gets a little overstimulated, so you'll want to watch for her signals and give her space when she needs it.
 
-If you've been thinking about a shepherd but worried about size or intensity, Luke might be exactly what you're looking for. He's ready to be someone's loyal companion and best friend. Our Pal's Place is on Canton Road in Marietta. Call ahead to meet him.
+Beignet knows what it's like to lose a home, so she's going to appreciate whoever gives her the next one. She just needs someone who understands that cats have their limits and respects them. If that sounds like you, she's ready to try again.
 
-**Our Pal's Place**
-4508 Canton Road, Marietta, GA 30062
-(678) 361-7623 | helpanimals@ourpalsplace.org
+Good Mews is a no-kill, cage-free shelter on Robinson Road in Marietta. You'll need to submit an inquiry and visit in person to meet Beignet. Call or email to get the process started.
 
-[Meet Unknown →]()
+**Good Mews Animal Foundation**
+3805 Robinson Road, Marietta, GA 30067
+(770) 499-2287 | adopt@goodmews.org
+
 
 
 ---
@@ -29,7 +30,11 @@ If you've been thinking about a shepherd but worried about size or intensity, Lu
 
 ![Marietta Diner](images/rest_marietta_diner_20260412.webp)
 
-This is the kind of place that feels like it's been here forever, and honestly, it probably has. It's one of those classic diners with the neon sign out front and booths that have seen decades of late-night conversations. Open 24 hours, so whether you're coming off a late shift or need pancakes at 2am, they've got you covered. The menu is huge and includes Greek dishes alongside all the diner classics. I usually go for the big breakfast platters, but my wife likes their Greek specialties when she's in the mood for something different. It's perfect for those times when you want comfort food and don't want to think too hard about it.
+This is the place you go when you can't decide what you want to eat because they literally have everything. The menu is massive and they're open 24 hours, which makes it perfect for late-night cravings or early breakfast meetings. My family ends up here after youth sports games because the kids can get pancakes while I get a Greek omelet.
+
+The breakfast is what they're known for, but don't sleep on the Greek specialties. The portions are generous and the prices are reasonable for what you get. It's classic diner food done right, and the neon sign makes it easy to spot from Cobb Parkway.
+
+Just be prepared for a wait during weekend breakfast hours. The parking lot fills up fast, but the turnover is pretty quick.
 
 📍 306 Cobb Pkwy SE, Marietta, GA 30060, USA | ⭐ 4.5
 
@@ -37,9 +42,13 @@ This is the kind of place that feels like it's been here forever, and honestly, 
 
 **Jerusalem Bakery & Grill** | Middle Eastern
 
-![Jerusalem Bakery & Grill](images/rest_jerusalem_bakery_&_g_20260412.webp)
+![Jerusalem Bakery & Grill](images/rest_jerusalem_bakery__g_20260412.webp)
 
-If you haven't tried Middle Eastern food or think it's all weird and spicy, this is your gateway place. The atmosphere is super casual and the staff is patient with questions about what everything is. I always get the shawarma because it's basically the perfect sandwich, and my kids love the falafel even though they're picky about everything else. They have good vegetarian options too if that's your thing. The portions are generous and the prices won't hurt your wallet. Great for a quick lunch or when you want something different from the usual chicken and burgers routine.
+This is where we go when we want Middle Eastern food that doesn't break the bank. The atmosphere is casual and the staff is friendly, which makes it perfect for bringing kids who might be trying falafel for the first time. It's tucked into a strip mall but don't let that fool you.
+
+The shawarma is really good and they have solid vegetarian options if you're dealing with picky eaters. The falafel is crispy and not dry like some places, and they have baklava and other desserts that are worth saving room for. Portions are generous so you'll probably have leftovers.
+
+The lunch crowd can get busy around noon, but they move people through pretty efficiently.
 
 📍 1175 Franklin Gateway SE, Marietta, GA 30067, USA | ⭐ 4.6
 
@@ -47,9 +56,13 @@ If you haven't tried Middle Eastern food or think it's all weird and spicy, this
 
 **Rio Steakhouse & Bakery** | Brazilian
 
-![Rio Steakhouse & Bakery](images/rest_rio_steakhouse_&_bak_20260412.webp)
+![Rio Steakhouse & Bakery](images/rest_rio_steakhouse__bak_20260412.webp)
 
-This is Brazilian barbecue done right, where they bring different cuts of meat to your table until you surrender. It's all-you-can-eat, so come hungry and wear stretchy pants. The cheese bread alone is worth the trip, and they also serve feijoada stew if you want to try Brazil's national dish. The vibe is relaxed, not stuffy like some steakhouses, so it works for families or a date night when you want to try something different. They also do breakfast, which is pretty unique around here. Just pace yourself because there's a lot of good food coming your way.
+If you've never done Brazilian all-you-can-eat barbecue, this is a good place to try it without the downtown Atlanta prices. They bring different cuts of meat to your table and you just say yes or no. The atmosphere is relaxed so you don't feel rushed, which is good because you want time to pace yourself.
+
+The cheese bread alone is worth the trip, and the feijoada stew is authentic if you want to try something traditional. They also do breakfast, which is unusual for this type of place. My wife likes that they have a good salad bar to balance out all the meat.
+
+Come hungry because you're paying for the all-you-can-eat experience. It's in Powers Ferry Plaza so parking is easy.
 
 📍 1275 Powers Ferry Rd ste 230, Marietta, GA 30067, USA | ⭐ 4.6
 
@@ -59,7 +72,11 @@ This is Brazilian barbecue done right, where they bring different cuts of meat t
 
 ![Marietta Square Market](images/rest_marietta_square_mark_20260412.webp)
 
-This is perfect when your family can't agree on what to eat because there are twenty different restaurants all under one roof. It's like a grown-up food court but with actually good food. Everyone can get what they want and still sit together. My kids love having options, and I appreciate that I can get real food instead of just mall fare. The setup works great for quick lunches downtown or when you're exploring the square with visitors. It's also nice that you can grab retail stuff while you're there. Just know it can get busy during lunch hours on weekdays.
+This is perfect when your group can't agree on one type of food because there are twenty different options under one roof. It's right near the Marietta Square so you can walk around afterward, and the setup makes it easy for families with different preferences. Everyone orders what they want and meets back at a table.
+
+The variety is impressive and the quality is generally good across the different vendors. I've had everything from tacos to Asian fusion to desserts here. It's also good for a quick lunch if you work nearby because you have options beyond the usual chain restaurants.
+
+Parking can be tight during peak hours, but there are several lots around the square if you don't mind a short walk.
 
 📍 68 North Marietta Pkwy NW, Marietta, GA 30060, USA | ⭐ 4.6
 
@@ -67,9 +84,13 @@ This is perfect when your family can't agree on what to eat because there are tw
 
 **Douceur De France - Bakery & Brunch** | French Bakery
 
-![Douceur De France - Bakery & Brunch](images/rest_douceur_de_france_-__20260412.webp)
+![Douceur De France - Bakery & Brunch](images/rest_douceur_de_france___20260412.webp)
 
-This place makes me feel like I'm cheating on every other bakery in town. The French baked goods are legit, not the grocery store pastry case stuff you're used to. Their baguettes are what French bread is supposed to taste like, and the petits fours are perfect for when you need something fancy for a meeting or party. I go for the quiches when I want actual brunch, not just sweet stuff. It's bright and cheerful inside, good for meeting friends or grabbing something special for weekend breakfast. Just don't expect American-style huge portions. This is quality over quantity, and honestly, that's refreshing sometimes.
+This is the real deal for French pastries and breakfast items. The baguettes are exactly what you'd expect from a proper French bakery, and the petits fours are perfect if you need something fancy for a meeting or small gathering. The atmosphere is bright and welcoming, not intimidating like some French places can be.
+
+The quiches are excellent for brunch and they have croissants that actually taste like they're made with real butter. My wife gets the pain au chocolat whenever we're here. Everything is made fresh and you can tell the difference.
+
+It's popular so weekend mornings can get busy, but the line moves pretty quickly. They also sell some retail items if you want to take home bread or pastries.
 
 📍 277 South Marietta Pkwy SW, Marietta, GA 30064, USA | ⭐ 4.9
 
@@ -81,53 +102,37 @@ This place makes me feel like I'm cheating on every other bakery in town. The Fr
 
 ## 🗞️ Local Lowdown
 
-### 💳 Cobb commissioners to vote on new financial chief
-
-The Cobb County Board of Commissioners will consider appointing a new chief financial officer at next week's meeting. The CFO position oversees the county's annual budget of more than **$1.8 billion** and manages financial operations for services that affect every East Cobb resident.
-
-The appointment requires a majority vote by commissioners and will set financial leadership for the county through major upcoming projects and budget cycles.
-
-More: [MDJ](https://mdjonline.com/news/local/cobb-to-vote-on-new-chief-financial-officer/article_5d36c5a9-93b6-4f3a-8447-b91b955160c8.html)
-
-### 🚰 Sewage spill reported near East Cobb area
-
-Cobb County Water System reported a **150-gallon** wastewater overflow that occurred on **April 4**. The spill was contained and cleaned up according to environmental regulations.
-
-While relatively small, any sewage overflow can affect local waterways and requires monitoring. The county water system serves most East Cobb neighborhoods and handles these incidents under state environmental guidelines.
-
-More: [MDJ](https://www.mdjonline.com/news/cobb-county-water-system-reports-150-gallon-sewage-overflow/article_8b1ee9ec-3407-4713-aa5a-d7d6fff74e5d.html)
-
 
 
 ---
 
 ## 🏠 Real Estate Corner
 
-### 🏠 Starter: 5/4 with 4,220 square feet for $300k
+### 🏠 Starter: 5/4 with 4,200 sq ft for $300k in Westbury
 
 ![Starter](images/re_East_Cobb_Connect_starter_template_20260412.gif)
 
-This Westbury Lane house is basically a unicorn at this price point. You're getting over 4,000 square feet and five bedrooms for what most people pay for a three-bedroom ranch around here. Something's probably going on with condition or layout, but if you can handle a project, this is serious square footage value.
+This is the kind of listing that makes you do a double-take — five bedrooms and four baths for under $300k in East Cobb. The square footage alone makes this a steal if you need space and don't mind putting in some work.
 
 [View Listing →](https://www.realtor.com/realestateandhomes-detail/1846-Westbury-Ln-SW_Marietta_GA_30064_M54598-04844)
 
 ---
 
-### 🏡 Sweet Spot: Brand new 5/5 in Laurel Springs for $650k
+### 🏡 Sweet Spot: 3/2 ranch on Richmond Hill Drive
 
 ![Sweet Spot](images/re_East_Cobb_Connect_sweet_spot_template_20260412.gif)
 
-Five bedrooms and five full baths in under 3,000 square feet means someone designed this smart. It's new construction in a solid East Cobb pocket, and $650k still gets you into good school zones without stretching into the $800k range that's becoming normal around here.
+This spot puts you right in the heart of East Cobb near Eastside Elementary and Pope High School. At $680k for a well-maintained ranch with a nice lot, it's priced at the top of the sweet spot but you're paying for the location and school district access.
 
-[View Listing →](https://www.realtor.com/realestateandhomes-detail/950-Laurel-Springs-Ln-SW_Marietta_GA_30064_M58222-95742)
+[View Listing →](https://www.realtor.com/realestateandhomes-detail/957-Richmond-Hill-Dr_Marietta_GA_30068_M63429-77416)
 
 ---
 
-### 🏰 Showcase: Nearly 15,000 square feet on Reverie Ridge
+### 🏰 Showcase: Nearly 15,000 sq ft estate on Reverie Ridge
 
 ![Showcase](images/re_East_Cobb_Connect_showcase_template_20260412.gif)
 
-$4.5 million gets you a compound-sized house with nine bathrooms and almost 15,000 square feet. This is the kind of place where you need a map to find the guest bedrooms. It's priced for someone who wants to own their own private resort in East Cobb.
+When people talk about East Cobb luxury, this is what they mean — $4.5 million gets you a mansion with nine bathrooms and enough space to host half the neighborhood. This is serious money for serious space in one of the area's most exclusive pockets.
 
 [View Listing →](https://www.realtor.com/realestateandhomes-detail/2081-Reverie-Rdg_Marietta_GA_30068_M53196-53229)
 
