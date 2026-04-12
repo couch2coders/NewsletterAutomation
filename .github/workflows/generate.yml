@@ -36,9 +36,21 @@ jobs:
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          ls -la images/ 2>/dev/null && echo "Images found:" && ls images/ || echo "No images/ folder"
-          git add -f README.md
-          git add -f images/ 2>/dev/null || true
-          git status
+
+          # Debug: show what's in images/
+          echo "=== Images folder ==="
+          ls -la images/ 2>/dev/null || echo "No images/ folder found"
+
+          # Check gitignore
+          echo "=== Checking gitignore ==="
+          cat .gitignore
+          git check-ignore -v images/ images/*.webp images/*.gif 2>/dev/null || echo "images/ is NOT ignored"
+
+          # Force add
+          git add README.md
+          git add --force images/*.webp images/*.gif images/*.png 2>/dev/null
+          echo "=== Staged files ==="
+          git diff --cached --name-only
+
           git diff --cached --quiet || git commit -m "update newsletter — $(date +%Y-%m-%d)"
           git push
