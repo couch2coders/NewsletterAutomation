@@ -258,12 +258,22 @@ def generate_pets():
 
     winner = results[0] if results else None
 
-    # Map photos back
-    photo_map = {p["url"]: p.get("photos", []) for p in all_pets}
+    # Map photos back by URL and name
+    photo_map_url = {p["url"]: p for p in all_pets}
+    photo_map_name = {p["name"].lower(): p for p in all_pets}
 
     # Generate WebP for winner
     if winner:
-        photos = photo_map.get(winner.get("source_url", ""), [])
+        pet_name = winner.get("pet_name", "")
+        # Find the original pet data
+        orig = photo_map_url.get(winner.get("source_url", "")) or photo_map_name.get(pet_name.lower(), {})
+        photos = orig.get("photos", [])
+        source_url = orig.get("url", winner.get("source_url", ""))
+        winner["source_url"] = source_url
+        shelter = orig.get("shelter_name", "")
+
+        print(f"  Winner: {pet_name} | {len(photos)} photos | {source_url[:50]}")
+
         if len(photos) >= 2:
             from gif_maker import create_gif_from_urls
             webp = create_gif_from_urls(photos[:3], crop_top=True)
@@ -272,16 +282,22 @@ def generate_pets():
                 path.write_bytes(webp)
                 winner["webp_path"] = str(path)
                 print(f"  ✓ Pet WebP: {len(webp):,} bytes")
+        elif len(photos) == 1:
+            winner["single_photo"] = photos[0]
 
     # Build markdown
     md = ""
     if winner:
-        md += f"**{winner.get('pet_name', '')}**\n\n"
+        pet_name = winner.get("pet_name", "Unknown")
+        md += f"**{pet_name}**\n\n"
         if winner.get("webp_path"):
             img_name = Path(winner["webp_path"]).name
-            md += f"![{winner.get('pet_name', '')}](images/{img_name})\n\n"
+            md += f"![{pet_name}](images/{img_name})\n\n"
+        elif winner.get("single_photo"):
+            md += f"![{pet_name}]({winner['single_photo']})\n\n"
         md += f"{winner.get('blurb', '')}\n\n"
-        md += f"[Meet {winner.get('pet_name', '')} →]({winner.get('source_url', '')})\n"
+        if winner.get("source_url"):
+            md += f"[Meet {pet_name} →]({winner['source_url']})\n"
 
     return {"markdown": md, "winner": winner}
 
@@ -424,6 +440,25 @@ def generate_lowdown():
                          "rape", "domestic violence", "arson", "robbery", "carjacking",
                          "trump", "biden", "GOP", "democrat", "republican"}
 
+    def is_paywalled(url):
+        try:
+            r = requests.get(url, timeout=8, allow_redirects=True,
+                             headers={"User-Agent": "Mozilla/5.0 (compatible; newsletter-bot)"})
+            if r.status_code in (401, 403, 451):
+                return True
+            final = r.url.lower()
+            if any(kw in final for kw in ["login", "signin", "subscribe", "paywall"]):
+                return True
+            content = r.text[:10000].lower()
+            signals = ["paywall", "metered", "leaky-paywall", "subscribe to read",
+                       "subscribers only", "to continue reading", "townnews",
+                       "bloxcms", "piano-paywall", "subscription-required"]
+            if any(s in content for s in signals):
+                return True
+        except Exception:
+            pass
+        return False
+
     headers = {"Accept": "application/json", "X-Subscription-Token": BRAVE_NEWS_API_KEY}
     articles = []
     seen = set()
@@ -439,6 +474,10 @@ def generate_lowdown():
                     continue
                 text = f"{title} {item.get('description', '')}".lower()
                 if any(kw in text for kw in EXCLUDED_KEYWORDS):
+                    print(f"    ✗ Excluded topic: {title[:50]}")
+                    continue
+                if is_paywalled(url):
+                    print(f"    ✗ Paywalled: {title[:50]}")
                     continue
                 seen.add(url)
                 articles.append({"title": title, "url": url,
@@ -452,6 +491,17 @@ def generate_lowdown():
 
     skill = load_skill("newsletter-local-lowdown-skill_auto.md")
     result = claude_json(skill, f"Select 3-5 stories for East Cobb Connect.\nReturn JSON.\n\nArticles:\n{json.dumps(articles, indent=2)}")
+
+    # Post-filter: remove paywalled URLs from Claude's output
+    for story in result.get("stories", []):
+        clean_urls = []
+        for src in story.get("source_urls", []):
+            url = src.get("url", "")
+            if url and not is_paywalled(url):
+                clean_urls.append(src)
+            else:
+                print(f"    ✗ Removed paywalled source: {src.get('label', '')}")
+        story["source_urls"] = clean_urls
 
     md = ""
     for story in result.get("stories", []):
