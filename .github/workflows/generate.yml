@@ -37,20 +37,10 @@ jobs:
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
 
-          # Debug: show what's in images/
-          echo "=== Images folder ==="
-          ls -la images/ 2>/dev/null || echo "No images/ folder found"
-
-          # Check gitignore
-          echo "=== Checking gitignore ==="
-          cat .gitignore
-          git check-ignore -v images/ images/*.webp images/*.gif 2>/dev/null || echo "images/ is NOT ignored"
-
-          # Force add all images
+          # Remove old images from git so new ones are always staged
+          git rm -rf images/ 2>/dev/null || true
           git add README.md
-          git add --force images/ 2>/dev/null || true
-          echo "=== Staged files ==="
-          git diff --cached --name-only
+          git add --force images/
 
           git diff --cached --quiet || git commit -m "update newsletter — $(date +%Y-%m-%d)"
           git push
