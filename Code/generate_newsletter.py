@@ -30,7 +30,7 @@ NEWSLETTER = {"name": "East_Cobb_Connect", "zip": "30062", "state": "ga",
               "lat": 33.9773, "lng": -84.5130, "display": "East Cobb"}
 
 SKILLS_DIR = Path(__file__).parent.parent / "Skills"
-OUTPUT_DIR = Path(__file__).parent / "output"
+OUTPUT_DIR = Path(__file__).parent.parent / "images"
 OUTPUT_DIR.mkdir(exist_ok=True)
 
 APIFY_TIMEOUT = 300
@@ -277,9 +277,10 @@ def generate_pets():
     md = ""
     if winner:
         md += f"**{winner.get('pet_name', '')}**\n\n"
-        md += f"{winner.get('blurb', '')}\n\n"
         if winner.get("webp_path"):
-            md += f"[View Photos]({winner.get('source_url', '')})\n\n"
+            img_name = Path(winner["webp_path"]).name
+            md += f"![{winner.get('pet_name', '')}](images/{img_name})\n\n"
+        md += f"{winner.get('blurb', '')}\n\n"
         md += f"[Meet {winner.get('pet_name', '')} →]({winner.get('source_url', '')})\n"
 
     return {"markdown": md, "winner": winner}
@@ -381,22 +382,30 @@ def generate_restaurants():
 
     results = claude_json(skill, f"Write a blurb for each restaurant.\nReturn JSON array.\n\n{combined}")
 
-    # Generate WebPs
+    # Generate WebPs and map filenames
     from gif_maker import create_gif_from_urls
+    photo_name_map = {rest["name"]: rest.get("photo_urls", []) for rest in restaurants}
     for r in results:
-        pid = r.get("place_id", "")
-        photos = next((rest["photo_urls"] for rest in restaurants if rest["place_id"] == pid), [])
+        rname = r.get("restaurant_name", "")
+        photos = photo_name_map.get(rname, [])
+        if not photos:
+            pid = r.get("place_id", "")
+            photos = next((rest["photo_urls"] for rest in restaurants if rest["place_id"] == pid), [])
         if len(photos) >= 2:
             webp = create_gif_from_urls(photos[:3])
             if webp:
-                slug = r.get("restaurant_name", "")[:20].lower().replace(" ", "_")
-                path = OUTPUT_DIR / f"rest_{slug}_{datetime.today().strftime('%Y%m%d')}.webp"
-                path.write_bytes(webp)
+                slug = rname[:20].lower().replace(" ", "_").replace("'", "")
+                fname = f"rest_{slug}_{datetime.today().strftime('%Y%m%d')}.webp"
+                (OUTPUT_DIR / fname).write_bytes(webp)
+                r["image_file"] = fname
+                print(f"  ✓ {rname} WebP: {len(webp):,} bytes")
 
     # Build markdown
     md = ""
     for r in results[:5]:
         md += f"**{r.get('restaurant_name', '')}** | {r.get('cuisine_type', '')}\n\n"
+        if r.get("image_file"):
+            md += f"![{r.get('restaurant_name', '')}](images/{r['image_file']})\n\n"
         md += f"{r.get('blurb', '')}\n\n"
         md += f"📍 {r.get('address', '')} | ⭐ {r.get('rating', '')}\n\n---\n\n"
 
@@ -531,11 +540,26 @@ def generate_real_estate():
     results = claude_json(skill, f"Write Real Estate Corner for East Cobb.\nReturn JSON array.\n\n{listings_text}")
 
     # Generate template images
+    image_map = {}
     try:
         from re_image_maker import generate_re_images
-        generate_re_images(tier_picks, NEWSLETTER["name"], str(OUTPUT_DIR))
+        img_results = generate_re_images(tier_picks, NEWSLETTER["name"], str(OUTPUT_DIR))
+        for img in img_results:
+            image_map[img["tier"]] = img["image_filename"]
     except Exception as e:
         print(f"  Template image error: {e}")
+
+    # Merge original data into Claude results
+    tier_data = {t["tier"]: t for t in tier_picks}
+    for r in results:
+        tier = r.get("tier", "")
+        orig = tier_data.get(tier, {})
+        r["price"] = orig.get("price", r.get("price", 0))
+        r["address"] = orig.get("address", r.get("address", ""))
+        r["beds"] = orig.get("beds", r.get("beds", 0))
+        r["baths"] = orig.get("baths", r.get("baths", 0))
+        r["sqft"] = orig.get("sqft", r.get("sqft", 0))
+        r["listing_url"] = orig.get("listing_url", r.get("listing_url", ""))
 
     # Build markdown
     md = ""
@@ -544,12 +568,11 @@ def generate_real_estate():
         emoji = next((t["emoji"] for t in tiers if t["name"] == tier), "🏠")
         price = r.get("price", 0)
         md += f"### {emoji} {tier}: {r.get('headline', '')}\n\n"
+        # Embed template image
+        img_file = image_map.get(tier, "")
+        if img_file:
+            md += f"![{tier}](images/{img_file})\n\n"
         md += f"{r.get('blurb', '')}\n\n"
-        md += f"**${price:,}** | {r.get('beds', 0)}bd/{r.get('baths', 0)}ba"
-        sqft = r.get("sqft", 0)
-        if sqft:
-            md += f" | {sqft:,} sqft"
-        md += f"\n\n{r.get('address', '')}\n\n"
         url = r.get("listing_url", "")
         if url:
             md += f"[View Listing →]({url})\n\n"
