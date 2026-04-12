@@ -37,8 +37,8 @@ jobs:
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
 
-          # Remove old images from git so new ones are always staged
-          git rm -rf images/ 2>/dev/null || true
+          # Remove old images from git tracking (keeps files on disk)
+          git rm -rf --cached images/ 2>/dev/null || true
           git add README.md
           git add --force images/
 
