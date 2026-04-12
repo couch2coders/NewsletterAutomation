@@ -8,15 +8,15 @@
 
 **Unknown**
 
-Beignet has already been through the adoption process once before. Originally adopted from Good Mews as a kitten, she somehow ended up scared and alone at a county shelter. Nobody knows what happened in between, but Good Mews brought her back to safety and she's been in foster care rebuilding her confidence.
+Luke's story starts rough but gets better fast. His mom Miss Daisy lost her person unexpectedly, and nobody in the family stepped up to help her or her two puppies. They all ended up at the county shelter until Our Pal's Place rescued them. Now Luke gets to run trails and play outside like a puppy should.
 
-She's come a long way. She loves being petted and is a social eater who prefers company at mealtime. When she wants attention, she'll sit close or lean against you. She can give gentle love bites when she gets overstimulated, so she needs someone who can read her signals and give her space when she asks for it.
+He's a fun-loving, playful guy who looks like his face borrowed from a Malinois while his mom went full German Shepherd. Luke's on the smaller side for a shepherd, which means you get all that loyal, smart shepherd personality in a more manageable package. He's been getting lots of attention from the summer camp kids at the rescue, so he's well-socialized and ready for a family.
 
-Beignet is ready for her second chance at a home where she'll be loved and cherished. Sometimes the second time around is the charm. Good Mews is a no-kill, cage-free shelter on Robinson Road in Marietta. You'll need to submit an inquiry and visit in person to meet her.
+Luke's young and energetic, so he'll need a home that can keep up with him. If you've got space to run and time to train, he's going to be an amazing companion. Our Pal's Place is on Canton Road in Marietta. Call or email to set up a meet and greet.
 
-**Good Mews Animal Foundation**
-3805 Robinson Road, Marietta, GA 30067
-(770) 499-2287 | adopt@goodmews.org
+**Our Pal's Place**
+4508 Canton Road, Marietta, GA 30062
+(678) 361-7623 | helpanimals@ourpalsplace.org
 
 
 
@@ -24,63 +24,51 @@ Beignet is ready for her second chance at a home where she'll be loved and cheri
 
 ## 🍽️ Restaurant Radar
 
-**Marietta Diner** | American Restaurant
+**Marietta Diner** | American
 
 ![Marietta Diner](images/rest_marietta_diner_20260412.webp)
 
-This is the diner that never sleeps on Cobb Parkway, and I mean that literally - they're open 24/7. It's got that classic neon sign you can't miss and feels like stepping back in time to when diners actually mattered. Perfect for late-night cravings, post-game meals with the kids, or when you need breakfast at 2pm on a Saturday.
-
-The menu is absolutely massive - like phone book thick - with everything from pancakes the size of dinner plates to Greek specialties that remind you Marietta has a strong Greek community. I always end up ordering way too much food because the portions are ridiculous. The breakfast is what they're known for, but honestly you can get a decent burger or Greek gyro any time of day.
-
-Just know you might wait a bit during peak breakfast hours on weekends, but turnover is pretty quick.
+This is the kind of place that saves your butt when you need food at weird hours. Open 24/7 with that classic neon sign you can spot from Cobb Parkway, it's got everything from pancakes at 2am to Greek gyros for lunch. Perfect for late-night cravings or when the kids want breakfast for dinner. The menu is massive so there's something for everyone, and they do a solid job with both the American classics and Greek specialties. Portions are generous and the prices won't kill you, which is why it's always packed with families, shift workers, and anyone else who needs real food when most places are closed.
 
 📍 306 Cobb Pkwy SE, Marietta, GA 30060, USA | ⭐ 4.5
 
 ---
 
-**Jerusalem Bakery & Grill** | Middle Eastern Restaurant
+**Jerusalem Bakery & Grill** | Middle Eastern
 
 ![Jerusalem Bakery & Grill](images/rest_jerusalem_bakery__g_20260412.webp)
 
-This place has become my go-to when I want Middle Eastern food that doesn't break the bank. It's tucked into a shopping center on Franklin Gateway, but don't let the location fool you - the food is legit. Great for a quick lunch or when you want something different from the usual chain options.
-
-The shawarma is what most people order, and it's solid - good meat, fresh vegetables, and they don't skimp on the portions. My wife loves the falafel and says it's some of the best she's had around here. They've got plenty of veggie options too, which is nice when you're trying to accommodate everyone. The desserts are worth saving room for if you're not in a rush.
+If you haven't tried Middle Eastern food or think it's all too heavy, this is your gateway spot. It's casual and welcoming, not intimidating at all, and the staff is happy to explain what everything is. The shawarma and falafel are what most people start with, and both are really good. The portions are huge so you can easily split a plate or have leftovers for lunch tomorrow. They've got plenty of vegetarian options too, which makes it work for mixed groups. The desserts are worth saving room for if you can manage it.
 
 📍 1175 Franklin Gateway SE, Marietta, GA 30067, USA | ⭐ 4.6
 
 ---
 
-**Rio Steakhouse & Bakery** | Brazilian Restaurant
+**Rio Steakhouse & Bakery** | Brazilian
 
 ![Rio Steakhouse & Bakery](images/rest_rio_steakhouse__bak_20260412.webp)
 
-If you've never done Brazilian all-you-can-eat barbecue, this is a good place to try it without the downtown Atlanta prices. They bring the meat to your table on skewers and keep it coming until you flip your little card to red. It's definitely a commitment meal - don't come here if you're planning to eat again anytime soon.
-
-The cheese bread alone is worth the trip, and they make it fresh throughout the meal. The feijoada stew is authentic if you want to try something traditional, but honestly most people come for the grilled meats. They also do breakfast, which is a nice surprise if you're in the mood for something different on a weekend morning.
+This is all-you-can-eat Brazilian barbecue, which means you pay one price and they keep bringing meat to your table until you wave the white flag. It's perfect for big appetites or special occasions when you want to try everything. The cheese bread alone is worth the trip, and the feijoada stew is comfort food at its finest. They also do breakfast, which is a nice surprise if you're looking for something different on weekend mornings. Come hungry because the portions are designed for serious eating, and don't plan anything active afterward.
 
 📍 1275 Powers Ferry Rd ste 230, Marietta, GA 30067, USA | ⭐ 4.6
 
 ---
 
-**Marietta Square Market** | Restaurant
+**Marietta Square Market** | Food Hall
 
 ![Marietta Square Market](images/rest_marietta_square_mark_20260412.webp)
 
-This food hall is perfect when your family can't agree on what to eat, or you want to try a few different things without committing to one restaurant. It's right by the square, so you can grab food and eat outside when the weather's nice. Good for lunch meetings or when you're downtown for events and need something quick.
-
-Twenty different vendors means you've got options - from tacos to Asian food to pizza. The quality varies by vendor, but that's true of any food hall. I like that you can get a beer and walk around to different spots. It's also handy for grabbing specialty items you can't find at regular grocery stores.
+This food hall is a lifesaver when your group can't agree on what to eat. Twenty different vendors under one roof means everyone gets what they want without compromise. It's right on the square so you can walk around afterward or hit up some of the shops. Good for families with picky kids, work lunches when people want different things, or date nights when you want to try a few small plates from different places. The setup makes it easy to grab something quick or sit and make it more of an experience.
 
 📍 68 North Marietta Pkwy NW, Marietta, GA 30060, USA | ⭐ 4.6
 
 ---
 
-**Douceur De France - Bakery & Brunch** | Bakery
+**Douceur De France - Bakery & Brunch** | French Bakery
 
 ![Douceur De France - Bakery & Brunch](images/rest_douceur_de_france___20260412.webp)
 
-This is where I go when I want to feel fancy on a Saturday morning without driving to Buckhead. It's a legit French bakery with an actual French owner who knows what he's doing. The croissants are flaky like they should be, and the coffee is strong enough to actually wake you up. Perfect for a special occasion brunch or when you want to impress out-of-town visitors.
-
-The quiches are what I usually order for brunch, and they rotate flavors so there's always something different to try. My wife goes for the petits fours, which are almost too pretty to eat. The baguettes are real French baguettes - crusty outside, soft inside - not the fake grocery store kind.
+This is where I go when I want to feel fancy without spending a fortune. The baguettes are the real deal, crusty outside and perfect inside, and the petits fours are almost too pretty to eat. It's great for a leisurely weekend brunch or when you need to bring something impressive to a gathering. The quiches are excellent if you want something more substantial than pastries. Just know it gets busy on weekends, so either go early or be prepared to wait a bit. The quality makes it worth it though.
 
 📍 277 South Marietta Pkwy SW, Marietta, GA 30064, USA | ⭐ 4.9
 
@@ -92,11 +80,11 @@ The quiches are what I usually order for brunch, and they rotate flavors so ther
 
 ## 🗞️ Local Lowdown
 
-### 🛒 Old East Cobb retail center getting a makeover
+### 🏗️ East Cobb retail center getting major makeover
 
-An aging East Cobb retail center is set for renovations, according to a recent editor's note from East Cobb News. While specific details about the project timeline and scope aren't yet available, the makeover represents new investment in local commercial properties.
+An older East Cobb retail center is set for a significant renovation, according to a new editor's note from East Cobb News. The makeover promises to breathe new life into the aging shopping center.
 
-Retail center improvements often bring new businesses and updated amenities that can boost property values and shopping convenience for nearby residents.
+The transformation could bring new businesses and improved amenities to the area, potentially increasing property values and shopping options for nearby residents.
 
 More: [East Cobb News](https://eastcobbnews.com/editors-note-a-makeover-for-an-old-east-cobb-retail-center/)
 
@@ -106,31 +94,31 @@ More: [East Cobb News](https://eastcobbnews.com/editors-note-a-makeover-for-an-o
 
 ## 🏠 Real Estate Corner
 
-### 🏠 Starter: 5-bedroom for $300k in Westbury
+### 🏠 Starter: 5/4 with over 4,000 square feet for $300k
 
 ![Starter](images/re_East_Cobb_Connect_starter_template_20260412.gif)
 
-You don't see 4,200 square feet under $300k in East Cobb anymore. This Westbury Lane house needs some work, but five bedrooms and four baths at this price point is basically unheard of around here.
+This Westbury Lane house is the kind of deal that makes you double-check the listing. Five bedrooms and four baths for $300k means you're getting serious space at starter home pricing. It's rare to find this much house under $350k in East Cobb.
 
 [View Listing →](https://www.realtor.com/realestateandhomes-detail/1846-Westbury-Ln-SW_Marietta_GA_30064_M54598-04844)
 
 ---
 
-### 🏡 Sweet Spot: 3-bedroom ranch near East Cobb Middle
+### 🏡 Sweet Spot: 3/2 ranch in the heart of East Cobb school district
 
 ![Sweet Spot](images/re_East_Cobb_Connect_sweet_spot_template_20260412.gif)
 
-Richmond Hill Drive puts you in the heart of East Cobb school district with an easy shot to 75 or 285. At 2,190 square feet, this ranch gives you the single-level living that's getting harder to find in this price range.
+Richmond Hill Drive puts you right in the sweet spot for East Cobb families. This ranch gives you the schools everyone wants with a manageable 2,190 square feet that won't eat your weekend with maintenance. At $680k, it's priced where most buyers in this area are shopping.
 
 [View Listing →](https://www.realtor.com/realestateandhomes-detail/957-Richmond-Hill-Dr_Marietta_GA_30068_M63429-77416)
 
 ---
 
-### 🏰 Showcase: 6,000+ square feet in Rand Ridge
+### 🏰 Showcase: 6,000+ square foot custom home on Rand Ridge Court
 
 ![Showcase](images/re_East_Cobb_Connect_showcase_template_20260412.gif)
 
-This is what luxury looks like in East Cobb right now. Six bathrooms, over 6,000 square feet, and you're still in Walton High School territory. The Rand Ridge location keeps you close to everything but feels like a private retreat.
+This is what $1.35 million looks like in one of East Cobb's more established neighborhoods. Six bedrooms, six baths, and over 6,000 square feet means room for everyone and everything. The Rand Ridge location gives you that established tree canopy and quiet cul-de-sac feel that's hard to find in newer builds.
 
 [View Listing →](https://www.realtor.com/realestateandhomes-detail/1937-Rand-Ridge-Ct_Marietta_GA_30062_M50228-52741)
 
