@@ -410,7 +410,7 @@ def generate_restaurants():
         if len(photos) >= 2:
             webp = create_gif_from_urls(photos[:3])
             if webp:
-                slug = rname[:20].lower().replace(" ", "_").replace("'", "")
+                slug = re.sub(r'[^a-z0-9_]', '', rname[:20].lower().replace(" ", "_"))
                 fname = f"rest_{slug}_{datetime.today().strftime('%Y%m%d')}.webp"
                 (OUTPUT_DIR / fname).write_bytes(webp)
                 r["image_file"] = fname

@@ -46,9 +46,9 @@ jobs:
           cat .gitignore
           git check-ignore -v images/ images/*.webp images/*.gif 2>/dev/null || echo "images/ is NOT ignored"
 
-          # Force add
+          # Force add all images
           git add README.md
-          git add --force images/*.webp images/*.gif images/*.png 2>/dev/null
+          git add --force images/ 2>/dev/null || true
           echo "=== Staged files ==="
           git diff --cached --name-only
 
