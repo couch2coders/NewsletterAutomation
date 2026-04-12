@@ -37,10 +37,14 @@ jobs:
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
 
-          # Remove old images from git tracking (keeps files on disk)
-          git rm -rf --cached images/ 2>/dev/null || true
-          git add README.md
-          git add --force images/
+          # Save images to temp, nuke the tracked folder, restore fresh
+          cp -r images/ /tmp/newsletter_images/
+          rm -rf images/
+          git checkout -- images/ 2>/dev/null || true
+          rm -rf images/
+          cp -r /tmp/newsletter_images/ images/
 
+          git add README.md images/
+          git status
           git diff --cached --quiet || git commit -m "update newsletter — $(date +%Y-%m-%d)"
           git push
