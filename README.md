@@ -1,4 +1,4 @@
-# 🗞️ East Cobb Connect — Week of April 27, 2026
+# 🗞️ East Cobb Connect — Week of May 04, 2026
 
 *Auto-generated newsletter content for East Cobb, GA*
 
@@ -6,16 +6,21 @@
 
 ## 🐾 Furry Friends
 
-**Unknown**
+**Otis**
 
-Otis was on the kill list at the county shelter just because of a date on a calendar. Not because he was aggressive or sick or difficult. He was just stressed out of his mind in the chaos and noise, urinating on himself from pure anxiety. The second they got him into a quiet room, he buried his head in someone's lap and didn't want to move.
+![Otis](images/pet_winner_20260504.webp)
 
-Now that he's had time to decompress at Our Pal's Place, he's back to being the dog he actually is. House-trained, sits politely, wags his tail, loves attention. He's one of those dogs who just wants to please you. The volunteers say he's fun-loving and loyal, which tracks for a dog who went through that much stress and bounced back this well.
+Otis was scheduled to be euthanized just because of a date on a calendar. Not because he was aggressive or sick or had behavioral problems. Just because the county shelter was full and his time was up. When the rescue team found him, he was so stressed he was urinating on himself in his kennel. The moment they got him into a quiet room, he buried his head in someone's lap and didn't want to let go.
 
-Whoever gets Otis is going to have a companion who knows what it's like to almost lose everything and appreciates having a home. He's not going to take it for granted.
+Now that he's had time to decompress at Our Pal's Place, his real personality is coming through. He's fun-loving, adores attention, and just wants to make his people happy. He remembered his house training immediately once he got out of that chaotic environment. He sits politely and his tail never stops wagging. You can tell he was someone's good boy before his world got turned upside down.
 
-Our Pal's Place is on Canton Road in Marietta. Call or email to get the adoption process started.
+Whoever adopts Otis is going to get a dog who understands what it's like to almost lose everything and will never take a good home for granted. He's the kind of loyal companion who'll follow you around the house just to be close. Our Pal's Place is on Canton Road in Marietta. Call or email to meet him.
 
+**Our Pal's Place**
+4508 Canton Road, Marietta, GA 30062
+(678) 361-7623 | helpanimals@ourpalsplace.org
+
+[Meet Otis →](https://www.petfinder.com/dog/otis-a4cbff45-f3eb-4b4f-88a7-933944291a89/ga/marietta/our-pals-place-ga284/details/)
 
 
 ---
@@ -24,9 +29,13 @@ Our Pal's Place is on Canton Road in Marietta. Call or email to get the adoption
 
 **Marietta Diner** | American Restaurant
 
-![Marietta Diner](images/rest_marietta_diner_20260427.webp)
+![Marietta Diner](images/rest_marietta_diner_20260504.webp)
 
-This is the place when you need food at 2am or want breakfast at dinnertime. The Marietta Diner has been doing the 24-hour thing forever, and honestly, it's kind of comforting to know it's always there. The menu is massive and they do Greek stuff alongside the usual diner fare, which makes sense once you realize the owners are Greek. My go-to is the breakfast platter because they don't mess around with portion sizes. The pancakes are huge and the hash browns are crispy. If you're feeling fancy, try the gyro or one of the Greek specialties. It's not gourmet, but it hits the spot when you want comfort food that won't break the bank.
+This is the place we hit when nothing else sounds good or when we're out way too late and need real food. It's open 24/7 with that classic neon sign, and the menu is absolutely massive - like, intimidatingly huge. Perfect for when the family can't agree on what they want since they literally have everything.
+
+The breakfast is what they're really known for, and it's the kind of portions that'll keep you full until dinner. They also do Greek dishes surprisingly well - the gyros and Greek salads are solid if you want something different from typical diner fare. My kids always get the pancakes, which are enormous.
+
+Just know you're going to wait on weekends, especially for brunch. But hey, it's one of the few places you can get a decent meal at 2am if that's your thing.
 
 📍 306 Cobb Pkwy SE, Marietta, GA 30060, USA | ⭐ 4.5
 
@@ -34,9 +43,13 @@ This is the place when you need food at 2am or want breakfast at dinnertime. The
 
 **Jerusalem Bakery & Grill** | Middle Eastern Restaurant
 
-![Jerusalem Bakery & Grill](images/rest_jerusalem_bakery__g_20260427.webp)
+![Jerusalem Bakery & Grill](images/rest_jerusalem_bakery__g_20260504.webp)
 
-This is where we go when we want Middle Eastern food but don't want to deal with the crowds at some of the bigger places. It's tucked into Franklin Gateway and the vibe is super chill. Perfect for a casual lunch or dinner when you want something healthy but filling. The shawarma is really good and they pile it high. My wife always gets the falafel platter and loves that they have plenty of veggie options. The hummus is creamy and they give you warm pita bread. Don't skip the desserts if you have room - the baklava is legit. It's the kind of place where the owner might come chat with you about the food.
+We discovered this place when we were looking for good Middle Eastern food without the drive into Atlanta. It's in a strip mall but don't let that fool you - the food is authentic and really well done. Great for lunch or a casual dinner when you want something different.
+
+The shawarma is what I usually get, and it's loaded with meat and comes with really good garlic sauce. My wife loves the falafel, which is crispy outside and not dry like some places. They have solid veggie options too if that's your thing, and the hummus is made fresh.
+
+They also have a bakery section with Middle Eastern sweets and pastries, which is nice if you want to grab dessert or take something home for later.
 
 📍 1175 Franklin Gateway SE, Marietta, GA 30067, USA | ⭐ 4.6
 
@@ -44,9 +57,13 @@ This is where we go when we want Middle Eastern food but don't want to deal with
 
 **Rio Steakhouse & Bakery** | Steak House
 
-![Rio Steakhouse & Bakery](images/rest_rio_steakhouse__bak_20260427.webp)
+![Rio Steakhouse & Bakery](images/rest_rio_steakhouse__bak_20260504.webp)
 
-If you've never done the Brazilian steakhouse thing, this is a good place to start. They bring the meat to your table on skewers and you eat until you can't move. It's all-you-can-eat so pace yourself. The cheese bread alone is worth the trip - it's addictive and they keep bringing it. My family loves the variety of cuts they offer and the salad bar is actually pretty decent too. They do breakfast and have feijoada stew if you want to try something traditional. It's not cheap but you definitely get your money's worth. Good for celebrations or when you want to impress someone who hasn't experienced the Brazilian barbecue experience.
+This is Brazilian all-you-can-eat, so come hungry and wear loose pants. The concept is they bring different grilled meats to your table on skewers until you wave the white flag. Good for celebrations or when you want to make a real event out of dinner.
+
+The picanha and lamb are usually the standouts, and they have this amazing cheese bread that's addictive. They also do feijoada stew, which is their traditional black bean dish if you want something different from just meat. The salad bar is actually pretty impressive too.
+
+It's not cheap, but you definitely get your money's worth if you're a meat person. They also do breakfast, which is a nice bonus if you're staying nearby.
 
 📍 1275 Powers Ferry Rd ste 230, Marietta, GA 30067, USA | ⭐ 4.6
 
@@ -54,9 +71,13 @@ If you've never done the Brazilian steakhouse thing, this is a good place to sta
 
 **Marietta Square Market** | Restaurant
 
-![Marietta Square Market](images/rest_marietta_square_mark_20260427.webp)
+![Marietta Square Market](images/rest_marietta_square_mark_20260504.webp)
 
-This is basically a fancy food court but way better than the mall version. Twenty different vendors under one roof means everyone in your group can get something different. Perfect when you can't agree on what kind of food you want. I like that you can get everything from tacos to Asian food to barbecue all in one place. The kids can get pizza while the adults try something more adventurous. It's right by the square so you can walk around downtown after you eat. Gets busy on weekends but that just means the food is fresh since there's good turnover. Way more interesting than chain restaurants and you're supporting local businesses.
+This is perfect when your family can't agree on what to eat since it's basically twenty restaurants under one roof. We go here a lot because I can get barbecue, my wife can get something healthier, and the kids can get pizza or whatever they're in the mood for.
+
+The setup is like a fancy food court - you order from different vendors and then find a table. The variety is pretty impressive, from tacos to sushi to comfort food. It's right on the square in downtown Marietta, so you can walk around after if the weather's nice.
+
+Parking can be tricky during busy times, and it gets crowded on weekends. But it's a good solution when everyone wants something different and you don't want to hit multiple restaurants.
 
 📍 68 North Marietta Pkwy NW, Marietta, GA 30060, USA | ⭐ 4.6
 
@@ -64,9 +85,13 @@ This is basically a fancy food court but way better than the mall version. Twent
 
 **Douceur De France - Bakery & Brunch** | Bakery
 
-![Douceur De France - Bakery & Brunch](images/rest_douceur_de_france___20260427.webp)
+![Douceur De France - Bakery & Brunch](images/rest_douceur_de_france___20260504.webp)
 
-This place makes me feel like I'm back in France, which is saying something because I'm picky about French pastries. The owner is actually French and you can tell in everything they make. The croissants are flaky and buttery like they should be, and the baguettes have that perfect crust. My wife loves their quiches for a light lunch and the petits fours are beautiful for special occasions. Weekend brunch is popular so get there early or expect a wait. The coffee is good too, which matters when you're having pastry. It's a bright, cheerful spot that makes you want to linger over breakfast. Worth the trip even if you're just grabbing pastries to take home.
+This is the real deal French bakery that makes us feel like we're getting away with something by not having to drive to Paris. The owner is actually French, and you can tell in everything they make. Perfect for weekend brunch or grabbing pastries for a special occasion.
+
+The baguettes are crusty and perfect, and their quiche changes daily but is always good. The petits fours are beautiful if you need something fancy for a gathering. My wife loves their croissants for weekend breakfast - they're buttery and flaky like they should be.
+
+Just know they sell out of popular items, especially on weekends, so get there early if you want first pick. It's the kind of place that makes you realize what you've been missing from regular grocery store bakeries.
 
 📍 277 South Marietta Pkwy SW, Marietta, GA 30064, USA | ⭐ 4.9
 
@@ -78,21 +103,25 @@ This place makes me feel like I'm back in France, which is saying something beca
 
 ## 🗞️ Local Lowdown
 
-### 🔥 Burn ban now in effect countywide due to drought
+### 🏗️ $60 million South Barrett Reliever bridge opens over I-75
 
-Cobb County Fire Marshal has issued a burn ban effective immediately due to drought conditions. All outdoor burning is prohibited until further notice, including yard debris, campfires, and fire pits.
+A new bridge over I-75 in Kennesaw is now open after decades of planning, offering drivers an alternative to congested Barrett Parkway. The **$60 million** South Barrett Reliever project connects east and west Cobb without forcing traffic through the busy Barrett corridor packed with shops and restaurants.
 
-This affects **all of Cobb County** including East Cobb neighborhoods. Violators can face fines and be held liable for any fires that spread to neighboring properties.
+This represents a major infrastructure win for commuters who've dealt with Barrett Parkway backups for years. The bridge should ease travel times for anyone heading between east and west Cobb.
 
-More: [East Cobb News](https://eastcobbnews.com/cobb-fire-marshal-issues-burn-ban-due-to-drought-conditions)
+More: Atlanta News First
 
-### 🐴 East Cobb family has 90 days to relocate emotional support pony
+More: [Atlanta News First](https://atlantanewsfirst.com/2026/05/01/cobb-county-leaders-aim-reduce-congestion-along-busy-corridor-with-new-bridge-over-i-75)
 
-The Cobb County Board of Commissioners unanimously ruled this week that Dark Chocolate, a mini Shetland pony, cannot remain at a subdivision home in East Cobb. The pony serves as an emotional support animal for a young daughter.
+### 🚗 Man arrested after ramming Cobb County fire truck
 
-The family now has **90 days** to find alternative housing for the pony. The case highlights ongoing debates about emotional support animals in residential neighborhoods.
+A man threatened to shoot Cobb County firefighters responding to a medical emergency, then backed his car into their fire engine, according to police. The incident occurred while crews were working an active EMS call.
 
-More: [Marietta Daily Journal](https://mdjonline.com/news/local/east-cobb-man-given-90-days-to-relocate-daughter-s-emotional-support-pony/article_119680d6-19d0-4378-b2b5-d360909cd44c.html)
+The arrest highlights ongoing safety concerns for first responders. Cobb County fire and EMS crews handle thousands of emergency calls annually throughout East Cobb neighborhoods.
+
+More: EMS1
+
+More: [EMS1](https://www.ems1.com/protecting-ems-providers-violence/ga-man-threatens-firefighters-rams-fire-engine-during-ems-call)
 
 
 
@@ -100,38 +129,38 @@ More: [Marietta Daily Journal](https://mdjonline.com/news/local/east-cobb-man-gi
 
 ## 🏠 Real Estate Corner
 
-### 🏠 Starter: 3/2 ranch for $400k on Huntington
+### 🏠 Starter: 3/2 ranch with 1,877 sq ft on Huntington Drive
 
-![Starter](images/re_East_Cobb_Connect_starter_template_20260427.gif)
+![Starter](images/re_East_Cobb_Connect_starter_template_20260504.gif)
 
-Nearly 1,900 square feet for exactly $400k is rare in East Cobb these days. This one's in the Tritt Elementary zone and has enough space that you won't feel cramped while you build equity.
+Right at $400k, this is about as much house as you'll find at this price point in East Cobb. The square footage gives you room to spread out, and Huntington Drive puts you close to everything without the premium of being right on Johnson Ferry.
 
 [View Listing →](https://www.realtor.com/realestateandhomes-detail/1661-Huntington-Dr_Marietta_GA_30066_M66362-03521)
 
 ---
 
-### 🏡 Sweet Spot: 4/3 with 2,500 sqft near East Cobb Middle
+### 🏡 Sweet Spot: 2/3 condo with 3 full baths in Prosper Circle
 
-![Sweet Spot](images/re_East_Cobb_Connect_sweet_spot_template_20260427.gif)
+![Sweet Spot](images/re_East_Cobb_Connect_sweet_spot_template_20260504.gif)
 
-This Wickingham home hits the sweet spot for families wanting East Cobb schools without stretching to $700k. Four bedrooms and three full baths means everyone gets their space, and you're walking distance to the middle school.
+Three full bathrooms in a 2-bedroom unit is unusual and smart for guests or a home office setup. At $465k, you're getting the East Cobb zip code and schools without the yard work, plus that third bathroom is going to come in handy.
 
-[View Listing →](https://www.realtor.com/realestateandhomes-detail/2298-Wickingham-Dr-NE_Marietta_GA_30066_M55448-18608)
-
----
-
-### 🏰 Showcase: 5,800 sqft custom with six baths on Edgemere
-
-![Showcase](images/re_East_Cobb_Connect_showcase_template_20260427.gif)
-
-Six bathrooms in a four-bedroom house tells you this isn't your average East Cobb build. The Edgemere Court location puts you in the heart of the area's most established neighborhood, and nearly 6,000 square feet means you'll never run out of room to spread out.
-
-[View Listing →](https://www.realtor.com/realestateandhomes-detail/2407-Edgemere-Ct_Marietta_GA_30062_M61827-51534)
+[View Listing →](https://www.realtor.com/realestateandhomes-detail/402-Prosper-Cir-Unit-204_Marietta_GA_30060_M60342-46690)
 
 ---
 
+### 🏰 Showcase: 5/5 custom home with nearly 6,000 sq ft in Waterford Green
+
+![Showcase](images/re_East_Cobb_Connect_showcase_template_20260504.gif)
+
+When you're spending $1.25 million, you want every bedroom to have its own bathroom, and that's exactly what this house delivers. Waterford Green is one of those quiet East Cobb neighborhoods where the lots are generous and the commute to 400 is still reasonable.
+
+[View Listing →](https://www.realtor.com/realestateandhomes-detail/1347-Waterford-Green-Close_Marietta_GA_30068_M51583-93529)
+
+---
+
 
 
 ---
 
-*Generated on April 27, 2026 by [Newsletter Automation](https://github.com/couch2coders/NewsletterAutomation)*
+*Generated on May 04, 2026 by [Newsletter Automation](https://github.com/couch2coders/NewsletterAutomation)*
